@@ -58,7 +58,7 @@ int main() {
 
     setPixelToWorld(jvmData, pixelToWorld);
 
-    int num_volumes = 3;
+    int num_volumes = 6;
 
     long volume_sizes[num_volumes];
 
@@ -69,25 +69,32 @@ int main() {
         std::cerr<< "Could not open the volume file! " << std::endl;
     }
 
-    for(int i = 0; i < num_volumes; i++) {
-        int slice_dimensions[3];
-        slice_dimensions[0] = volume_dimensions[0];
-        slice_dimensions[1] = volume_dimensions[1];
-        slice_dimensions[2] = volume_dimensions[2] / num_volumes;
+    int chunks_remaining = num_volumes;
+    int slices_remaining = volume_dimensions[2];
 
-        volume_sizes[i] = slice_dimensions[0] * slice_dimensions[1] * slice_dimensions[2] * 2;
+    for(int i = 0; i < num_volumes; i++) {
+        int chunk_dimensions[3];
+        chunk_dimensions[0] = volume_dimensions[0];
+        chunk_dimensions[1] = volume_dimensions[1];
+        chunk_dimensions[2] = slices_remaining / chunks_remaining;
+        slices_remaining -= chunk_dimensions[2];
+        chunks_remaining--;
+
+        std::cout << "Chunk " << i << "has dimensions: " << chunk_dimensions[0] << " " << chunk_dimensions[1] << " " << chunk_dimensions[2] << std::endl;
+
+        volume_sizes[i] = chunk_dimensions[0] * chunk_dimensions[1] * chunk_dimensions[2] * 2;
 
         float pos [3];
         pos[0] = 0.f;
         pos[1] = 0.f;
         pos[2] = 1.f * (float)prev_slices * pixelToWorld;
 
-        createVolume(jvmData, i, slice_dimensions, pos);
+        createVolume(jvmData, i, chunk_dimensions, pos);
         char * buffer = new char[volume_sizes[i]];
         volumeFile.read (buffer, volume_sizes[i]);
         updateVolume(jvmData, i, buffer, volume_sizes[i]);
 
-        prev_slices = slice_dimensions[2];
+        prev_slices += chunk_dimensions[2];
     }
 
     std::cout<<"Back after calling do Render" <<std::endl;
