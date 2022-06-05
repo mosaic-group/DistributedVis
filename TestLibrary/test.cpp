@@ -87,7 +87,7 @@ JVMData func(int rank) {
     #endif
 
     options[3].optionString = (char *)
-            "-Dscenery.Headless=false";
+            "-Dscenery.Headless=true";
 
     vm_args.version = JNI_VERSION_1_6;
     vm_args.nOptions = 4;
