@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.19)
 project(DistributedVis)
 
-set(JAVA_HOME "/usr/lib/jvm/adoptopenjdk-11-hotspot-amd64/")
+#set(JAVA_HOME "/usr/lib/jvm/adoptopenjdk-11-hotspot-amd64/")
 
 find_package(Java)
 find_package(JNI)

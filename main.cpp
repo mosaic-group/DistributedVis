@@ -58,7 +58,7 @@ int main() {
 //        sleep(10000);
 //    }
 
-    JVMData jvmData = func(rank);
+    JVMData jvmData = func(rank, false);
 
     setPointerAddresses(jvmData, MPI_COMM_WORLD);
     setVDIGeneration(jvmData, true);

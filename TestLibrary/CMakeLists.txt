@@ -1,4 +1,4 @@
-set(JAVA_HOME "/usr/lib/jvm/adoptopenjdk-11-hotspot-amd64/")
+#set(JAVA_HOME "/usr/lib/jvm/adoptopenjdk-11-hotspot-amd64/")
 
 find_package(Java)
 find_package(JNI)

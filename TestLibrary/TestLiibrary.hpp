@@ -15,7 +15,7 @@ struct JVMData {
     JNIEnv *env;
 };
 
-JVMData func(int rank);
+JVMData func(int rank, bool isCluster);
 void setPointerAddresses(JVMData jvmData, MPI_Comm renderComm);
 void stopRendering(JVMData jvmData);
 void setPixelToWorld(JVMData jvmData , float pixelToWorld);

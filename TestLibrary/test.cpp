@@ -31,7 +31,7 @@ vis_type getVisType() {
 
 void registerNatives(JVMData jvmData);
 
-JVMData func(int rank) {
+JVMData func(int rank, bool isCluster) {
     JVMData jvmData{};
 
     DIR *dir;
@@ -158,6 +158,9 @@ JVMData func(int rank) {
     #if VERBOSE
     std::cout << "Object of class has been constructed" << std::endl;
     #endif
+
+    jfieldID vdiField = jvmData.env->GetFieldID(jvmData.clazz, "isCluster", "Z");
+    jvmData.env->SetBooleanField(jvmData.obj, vdiField, isCluster);
 
     jvmData.clazz = reinterpret_cast<jclass>(jvmData.env->NewGlobalRef(localClass));
     jvmData.obj = reinterpret_cast<jobject>(jvmData.env->NewGlobalRef(localObj));
