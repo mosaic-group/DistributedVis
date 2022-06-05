@@ -139,6 +139,10 @@ JVMData func(int rank, bool isCluster) {
         }
     }
 
+#if VERBOSE
+    std::cout << "Constructor found for " << className << std::endl;
+#endif
+
     //if constructor found, continue
     jobject localObj;
     localObj = jvmData.env->NewObject(localClass, constructor);
@@ -159,8 +163,12 @@ JVMData func(int rank, bool isCluster) {
     std::cout << "Object of class has been constructed" << std::endl;
     #endif
 
-    jfieldID vdiField = jvmData.env->GetFieldID(jvmData.clazz, "isCluster", "Z");
-    jvmData.env->SetBooleanField(jvmData.obj, vdiField, isCluster);
+    jfieldID clusterField = jvmData.env->GetFieldID(localClass, "isCluster", "Z");
+    jvmData.env->SetBooleanField(localObj, clusterField, isCluster);
+
+    if (jvmData.env->ExceptionOccurred()) {
+        jvmData.env->ExceptionDescribe();
+    }
 
     jvmData.clazz = reinterpret_cast<jclass>(jvmData.env->NewGlobalRef(localClass));
     jvmData.obj = reinterpret_cast<jobject>(jvmData.env->NewGlobalRef(localObj));
