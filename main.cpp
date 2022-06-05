@@ -4,6 +4,8 @@
 #include <thread>
 #include <fstream>
 #include <vector>
+#include <zconf.h>
+#include <cmath>
 
 void tokenize(std::string const &str, const char delim,
               std::vector<std::string> &out)
@@ -49,57 +51,100 @@ int main() {
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
+    int num_processes;
+    MPI_Comm_size(MPI_COMM_WORLD, &num_processes);
+
+//    if(rank == 1) {
+//        sleep(10000);
+//    }
+
     JVMData jvmData = func(rank);
 
-    std::thread render(&doRender, jvmData);
+    setPointerAddresses(jvmData, MPI_COMM_WORLD);
+    setVDIGeneration(jvmData, true);
 
-    int * volume_dimensions = getVolumeDims("/home/aryaman/Datasets/Volume/Stagbeetle/Part1");
-    float pixelToWorld = 3.84f / (float)volume_dimensions[0]; //empirical
+    if(true) {
 
-    setPixelToWorld(jvmData, pixelToWorld);
+        std::thread render(&doRender, jvmData);
 
-    int num_volumes = 6;
+        int * volume_dimensions = getVolumeDims("/home/aryaman/Datasets/Volume/Stagbeetle/Part1");
+        float pixelToWorld = 3.84f / (float)volume_dimensions[0]; //empirical
+        setPixelToWorld(jvmData, pixelToWorld);
+        setMPIParams(jvmData, rank, num_processes);
 
-    long volume_sizes[num_volumes];
+        const bool is16bit = true;
 
-    int prev_slices = 0;
+        int slices_per_process[num_processes];
+        int start_slice[num_processes];
 
-    std::ifstream volumeFile ("/home/aryaman/Datasets/Volume/Stagbeetle/Part1/stagbeetle832x832x494.raw", std::ios::in | std::ios::binary);
-    if(!volumeFile.is_open()) {
-        std::cerr<< "Could not open the volume file! " << std::endl;
+        int processes_remaining = num_processes;
+        int slices_remaining = volume_dimensions[2];
+
+        int prev_slices = 0;
+
+        for(int i = 0; i < num_processes; i++) {
+            slices_per_process[i] = slices_remaining / processes_remaining;
+            start_slice[i] = prev_slices;
+            slices_remaining -= slices_per_process[i];
+            processes_remaining--;
+            std::cout << "Process " << i << "will handle: " << slices_per_process[i] << " slices." << std::endl;
+            prev_slices += slices_per_process[i];
+        }
+
+        long volume_size = volume_dimensions[0] * volume_dimensions[1] * slices_per_process[rank] * (is16bit? 2: 1);
+
+        int num_volumes = ceil((double)volume_size / 2000000000.0); // Divide by 2 GB. each process will handle num_volumes volumes
+
+        long volume_sizes[num_volumes]; // this array will store the size (in Bytes) of each volume in the scene of a given visualization process
+
+        prev_slices = start_slice[rank];
+
+        std::ifstream volumeFile ("/home/aryaman/Datasets/Volume/Stagbeetle/Part1/stagbeetle832x832x494.raw", std::ios::in | std::ios::binary);
+        if(!volumeFile.is_open()) {
+            std::cerr<< "Could not open the volume file! " << std::endl;
+        }
+
+        volumeFile.seekg(prev_slices * volume_dimensions[0] * volume_dimensions[1] * 2);
+
+        int chunks_remaining = num_volumes;
+        slices_remaining = slices_per_process[rank];
+
+        for(int i = 0; i < num_volumes; i++) {
+            int chunk_dimensions[3];
+            chunk_dimensions[0] = volume_dimensions[0];
+            chunk_dimensions[1] = volume_dimensions[1];
+            chunk_dimensions[2] = slices_remaining / chunks_remaining;
+            slices_remaining -= chunk_dimensions[2];
+            chunks_remaining--;
+
+            std::cout << "Chunk " << i << " has dimensions: " << chunk_dimensions[0] << " " << chunk_dimensions[1] << " " << chunk_dimensions[2] << std::endl;
+
+            volume_sizes[i] = chunk_dimensions[0] * chunk_dimensions[1] * chunk_dimensions[2] * 2;
+
+            float pos [3];
+            pos[0] = 0.f;
+            pos[1] = 0.f;
+            pos[2] = 1.f * (float)prev_slices * pixelToWorld;
+
+            createVolume(jvmData, i, chunk_dimensions, pos);
+            char * buffer = new char[volume_sizes[i]];
+            volumeFile.read (buffer, volume_sizes[i]);
+            updateVolume(jvmData, i, buffer, volume_sizes[i]);
+
+            prev_slices += chunk_dimensions[2];
+        }
+
+        setRendererConfigured(jvmData);
+
+        std::cout<<"Back after calling do Render" <<std::endl;
+
+        sleep(50);
+        std::cout<<"Calling stopRendering!" <<std::endl;
+        stopRendering(jvmData);
+
+        render.join();
     }
 
-    int chunks_remaining = num_volumes;
-    int slices_remaining = volume_dimensions[2];
-
-    for(int i = 0; i < num_volumes; i++) {
-        int chunk_dimensions[3];
-        chunk_dimensions[0] = volume_dimensions[0];
-        chunk_dimensions[1] = volume_dimensions[1];
-        chunk_dimensions[2] = slices_remaining / chunks_remaining;
-        slices_remaining -= chunk_dimensions[2];
-        chunks_remaining--;
-
-        std::cout << "Chunk " << i << "has dimensions: " << chunk_dimensions[0] << " " << chunk_dimensions[1] << " " << chunk_dimensions[2] << std::endl;
-
-        volume_sizes[i] = chunk_dimensions[0] * chunk_dimensions[1] * chunk_dimensions[2] * 2;
-
-        float pos [3];
-        pos[0] = 0.f;
-        pos[1] = 0.f;
-        pos[2] = 1.f * (float)prev_slices * pixelToWorld;
-
-        createVolume(jvmData, i, chunk_dimensions, pos);
-        char * buffer = new char[volume_sizes[i]];
-        volumeFile.read (buffer, volume_sizes[i]);
-        updateVolume(jvmData, i, buffer, volume_sizes[i]);
-
-        prev_slices += chunk_dimensions[2];
-    }
-
-    std::cout<<"Back after calling do Render" <<std::endl;
-
-    render.join();
 
     MPI_Finalize();
 
