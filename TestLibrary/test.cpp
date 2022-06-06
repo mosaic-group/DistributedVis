@@ -15,7 +15,14 @@ int count = 0;
 int windowWidth = 1280;
 int windowHeight = 720;
 int numSupersegments = 20;
-int numOutputSupsegs = 40;
+int numOutputSupsegs = 20;
+
+//int totalSupersegments = windowWidth * windowHeight * numSupersegments *
+
+//void * a = nullptr;
+//void * b = nullptr;
+//void * c = nullptr;
+//void * d = nullptr;
 
 enum vis_type
 {
@@ -72,7 +79,7 @@ JVMData func(int rank, bool isCluster) {
 
     #if USE_VULKAN
     options[1].optionString = (char *)
-            "-Dscenery.Renderer=VulkanRenderer";
+            "-Dscenery.VulkanRenderer.EnableValidations=false";
     #else
     options[1].optionString = (char *)
             "-Dscenery.Renderer=OpenGLRenderer";
@@ -247,6 +254,16 @@ void setPointerAddresses(JVMData jvmData, MPI_Comm renderComm) {
     void * gatherColorPointer = malloc(windowHeight * windowWidth * numOutputSupsegs * 4 * 4);
     void * gatherDepthPointer = malloc(windowHeight * windowWidth * numOutputSupsegs * 4 * 2);
 
+//    a = malloc(windowHeight * windowWidth * numSupersegments * 4 * 4);
+//    b = malloc(windowWidth * windowHeight * numSupersegments * 4 * 2);
+//    c = malloc(windowHeight * windowWidth * numOutputSupsegs * 4 * 4);
+//    d = malloc(windowHeight * windowWidth * numOutputSupsegs * 4 * 2);
+
+    std::cout << "During initialization, gather color pointer: " << gatherColorPointer << std::endl;
+    std::cout << "In long, color is: " << reinterpret_cast<long>(gatherColorPointer) << std::endl;
+    std::cout << "During initialization, gather depth pointer: " << gatherDepthPointer << std::endl;
+    std::cout << "In long, depth is: " << reinterpret_cast<long>(gatherDepthPointer) << std::endl;
+
     MPI_Comm * mpiPointer = &renderComm;
 
     jfieldID allC = jvmData.env->GetFieldID(jvmData.clazz, "allToAllColorPointer", "J");
@@ -417,10 +434,10 @@ void distributeVDIs(JNIEnv *e, jobject clazzObject, jobject subVDICol, jobject s
 
     printf("Got MPI comm, trying alltoall\n");
 
-    MPI_Alltoall(ptrCol, sizePerProcess * 4, MPI_BYTE, recvBufCol, sizePerProcess * 4, MPI_BYTE, MPI_COMM_WORLD);
+    MPI_Alltoall(ptrCol, windowHeight * windowWidth * numSupersegments * 4 * 4 / commSize, MPI_BYTE, recvBufCol, windowHeight * windowWidth * numSupersegments * 4 * 4 / commSize, MPI_BYTE, MPI_COMM_WORLD);
 
 #if SEPARATE_DEPTH
-        MPI_Alltoall(ptrDepth, sizePerProcess * 2, MPI_BYTE, recvBufDepth, sizePerProcess * 2, MPI_BYTE, MPI_COMM_WORLD);
+        MPI_Alltoall(ptrDepth, windowHeight * windowWidth * numSupersegments * 4 * 2 / commSize, MPI_BYTE, recvBufDepth, windowHeight * windowWidth * numSupersegments * 4 * 2 / commSize, MPI_BYTE, MPI_COMM_WORLD);
 #endif
 
     printf("Finished both alltoalls\n");
@@ -433,7 +450,7 @@ void distributeVDIs(JNIEnv *e, jobject clazzObject, jobject subVDICol, jobject s
     jobject bbDepth;
 
 #if SEPARATE_DEPTH
-    bbDepth = e->NewDirectByteBuffer(recvBufDepth, sizePerProcess * commSize * 2);
+    bbDepth = e->NewDirectByteBuffer( recvBufDepth, sizePerProcess * commSize * 2);
 #else
     bbDepth = e->NewDirectByteBuffer(recvBufDepth, 0);
 #endif
@@ -456,6 +473,11 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
 
     if (VERBOSE) std::cout<<"In Gather function " <<std::endl;
 
+    std::cout << "color pointer in long: " << colPointer << std::endl;
+    std::cout << "In void *, color is: " << reinterpret_cast<void *>(colPointer) << std::endl;
+    std::cout << "depth pointer in long: " << depthPointer << std::endl;
+    std::cout << "In void *, depth is: " << reinterpret_cast<void *>(depthPointer) << std::endl;
+
     std::cout<<"Col buff capacity: " << e->GetDirectBufferCapacity(compositedVDIColor) <<std::endl;
     std::cout<<"Depth buff capacity: " << e->GetDirectBufferCapacity(compositedVDIDepth) <<std::endl;
 
@@ -464,27 +486,24 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
     void *ptrCol = e->GetDirectBufferAddress(compositedVDIColor);
     void *ptrDepth = e->GetDirectBufferAddress(compositedVDIDepth);
 
-//    ptrCol = malloc(294912000);
-//    ptrDepth = malloc(147456000);
-
     void * gather_recv_color = reinterpret_cast<void *>(colPointer);
     void * gather_recv_depth = reinterpret_cast<void *>(depthPointer);
 
     if (myRank == 0) {
-//        if(gather_recv_color == nullptr) {
+        if(gather_recv_color == nullptr) {
             std::cout<<"allocating color receive buffer in gather"<<std::endl;
             gather_recv_color = malloc(compositedVDILen * commSize * 4);
-//        }
-//        if(gather_recv_depth == nullptr) {
+        }
+        if(gather_recv_depth == nullptr) {
             std::cout<<"allocating depth receive buffer in gather"<<std::endl;
             gather_recv_depth = malloc(compositedVDILen * commSize * 2);
-//        }
+        }
     }
 
     auto * renComm = reinterpret_cast<MPI_Comm *>(mpiPointer);
 
-    MPI_Gather(ptrCol, compositedVDILen * 4, MPI_BYTE, gather_recv_color, compositedVDILen * 4, MPI_BYTE, root, MPI_COMM_WORLD);
-    MPI_Gather(ptrDepth, compositedVDILen * 2, MPI_BYTE,  gather_recv_depth, compositedVDILen * 2, MPI_BYTE, root, MPI_COMM_WORLD);
+    MPI_Gather(ptrCol, windowWidth * windowHeight * numOutputSupsegs * 4 * 4 / commSize, MPI_BYTE, gather_recv_color, windowWidth * windowHeight * numOutputSupsegs * 4 * 4 / commSize, MPI_BYTE, root, MPI_COMM_WORLD);
+    MPI_Gather(ptrDepth, windowWidth  * windowHeight * numOutputSupsegs * 4 * 2 / commSize, MPI_BYTE,  gather_recv_depth, windowWidth * windowHeight * numOutputSupsegs * 4 * 2 / commSize, MPI_BYTE, root, MPI_COMM_WORLD);
     //The data is here now!
 
     std::string dataset = "DistributedStagbeetle";
@@ -510,8 +529,8 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
 
             if (b_stream)
             {
-                b_stream.write(static_cast<const char *>(gather_recv_color), compositedVDILen * commSize * 4);
-                b_streamDepth.write(static_cast<const char *>(gather_recv_depth), compositedVDILen * commSize * 2);
+                b_stream.write(static_cast<const char *>(gather_recv_color), windowHeight * windowWidth * numOutputSupsegs * 4 * 4);
+                b_streamDepth.write(static_cast<const char *>(gather_recv_depth), windowHeight * windowWidth * numOutputSupsegs * 4 * 2);
 
                 if (b_stream.good()) {
                     std::cout<<"Writing was successful"<<std::endl;

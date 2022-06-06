@@ -45,9 +45,14 @@ int * getVolumeDims(const std::string& path) {
 
 int main() {
     std::cout << "Hello, World!" << std::endl;
+    std::cout << "Long size " << sizeof(long) << " and jlong is: " << sizeof(jlong) << std::endl;
 
-    MPI_Init(NULL, NULL);
+    int provided;
+    MPI_Init_thread(NULL, NULL, MPI_THREAD_SERIALIZED, &provided);
 
+    std::cout << "Got MPI thread level: " << provided << std::endl;
+//
+//    MPI_Init(NULL, NULL);
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
@@ -138,7 +143,7 @@ int main() {
 
         std::cout<<"Back after calling do Render" <<std::endl;
 
-        sleep(50);
+        sleep(60);
         std::cout<<"Calling stopRendering!" <<std::endl;
         stopRendering(jvmData);
 

@@ -3,6 +3,8 @@
 find_package(Java)
 find_package(JNI)
 
+find_package(MPI)
+
 #set(JNI_LIBRARIES /usr/lib/jvm/adoptopenjdk-11-hotspot-amd64/lib/libjawt.so;/usr/lib/jvm/adoptopenjdk-11-hotspot-amd64/lib/server/libjvm.so)
 
 if(Java_FOUND)
@@ -21,6 +23,10 @@ add_library(TestLibrary test.cpp)
 
 target_include_directories(TestLibrary PUBLIC ${JNI_INCLUDE_DIRS})
 
-target_include_directories (TestLibrary PUBLIC ${JNI_INCLUDE_DIRS})
+#target_include_directories (TestLibrary PUBLIC ${JNI_INCLUDE_DIRS})
 
-target_link_libraries(TestLibrary ${JNI_LIBRARIES})
+target_include_directories(TestLibrary PUBLIC
+        ${MPI_C_INCLUDE_PATH}
+        )
+
+target_link_libraries(TestLibrary ${JNI_LIBRARIES} ${MPI_CXX_LIBRARIES})
