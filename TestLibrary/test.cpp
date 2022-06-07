@@ -4,11 +4,12 @@
 #include "TestLiibrary.hpp"
 #include <mpi.h>
 #include <ctime>
+#include <chrono>
 
 #define VERBOSE true
 #define USE_VULKAN true
 #define SEPARATE_DEPTH true
-#define SAVE_FILES true
+#define SAVE_FILES false
 
 int count = 0;
 
@@ -16,6 +17,8 @@ int windowWidth = 1280;
 int windowHeight = 720;
 int numSupersegments = 20;
 int numOutputSupsegs = 20;
+auto begin = std::chrono::high_resolution_clock::now();
+auto end = std::chrono::high_resolution_clock::now();
 
 //int totalSupersegments = windowWidth * windowHeight * numSupersegments *
 
@@ -505,6 +508,13 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
     MPI_Gather(ptrCol, windowWidth * windowHeight * numOutputSupsegs * 4 * 4 / commSize, MPI_BYTE, gather_recv_color, windowWidth * windowHeight * numOutputSupsegs * 4 * 4 / commSize, MPI_BYTE, root, MPI_COMM_WORLD);
     MPI_Gather(ptrDepth, windowWidth  * windowHeight * numOutputSupsegs * 4 * 2 / commSize, MPI_BYTE,  gather_recv_depth, windowWidth * windowHeight * numOutputSupsegs * 4 * 2 / commSize, MPI_BYTE, root, MPI_COMM_WORLD);
     //The data is here now!
+
+    end = std::chrono::high_resolution_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
+
+    printf("Time measured: %.3f seconds.\n", elapsed.count() * 1e-9);
+
+    begin = std::chrono::high_resolution_clock::now();
 
     std::string dataset = "DistributedStagbeetle";
 
