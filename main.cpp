@@ -70,13 +70,13 @@ int main() {
 
     if(true) {
 
-        std::thread render(&doRender, jvmData);
 
         int * volume_dimensions = getVolumeDims("/home/aryaman/Datasets/Volume/Stagbeetle/Part1");
         float pixelToWorld = 3.84f / (float)volume_dimensions[0]; //empirical
         setPixelToWorld(jvmData, pixelToWorld);
         setMPIParams(jvmData, rank, num_processes);
 
+        std::thread render(&doRender, jvmData);
         const bool is16bit = true;
 
         int slices_per_process[num_processes];
