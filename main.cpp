@@ -71,7 +71,7 @@ int main() {
     MPI_Comm_rank(nodeComm,&node_rank);
 
 
-    JVMData jvmData = setupJVM(node_rank, false);
+    JVMData jvmData = setupJVM(false);
 
     setPointerAddresses(jvmData, MPI_COMM_WORLD);
     setVDIGeneration(jvmData, true);
@@ -82,7 +82,7 @@ int main() {
         int * volume_dimensions = getVolumeDims("/home/aryaman/Datasets/Volume/Stagbeetle/Part1");
         float pixelToWorld = 3.84f / (float)volume_dimensions[0]; //empirical
         setPixelToWorld(jvmData, pixelToWorld);
-        setMPIParams(jvmData, rank, num_processes);
+        setMPIParams(jvmData, rank, node_rank, num_processes);
 
         std::thread render(&doRender, jvmData);
         const bool is16bit = true;

@@ -41,7 +41,7 @@ vis_type getVisType() {
 
 void registerNatives(JVMData jvmData);
 
-JVMData setupJVM(int node_rank, bool isCluster) {
+JVMData setupJVM(bool isCluster) {
     JVMData jvmData{};
 
     DIR *dir;
@@ -82,7 +82,7 @@ JVMData setupJVM(int node_rank, bool isCluster) {
 
     #if USE_VULKAN
     options[1].optionString = (char *)
-            "-Dscenery.VulkanRenderer.EnableValidations=true";
+            "-Dscenery.VulkanRenderer.EnableValidations=false";
     #else
     options[1].optionString = (char *)
             "-Dscenery.Renderer=OpenGLRenderer";
@@ -95,16 +95,12 @@ JVMData setupJVM(int node_rank, bool isCluster) {
     options[3].optionString = (char *)
             "-Dscenery.Headless=true";
 
-    if(node_rank == 0) {
-        options[4].optionString = (char *)
-                                          "-Dscenery.Renderer.DeviceId=0";
-    } else {
-        options[4].optionString = (char *)
-                                          "-Dscenery.Renderer.DeviceId=1";
-    }
+    options[4].optionString = (char *)
+                                      "-Dscenery.LogLevel=info";
 
+//    options[4].optionString = (char *)
+//                                      "-Dscenery.LogLevel=debug";
 
-    std::cout << "Device ID was set to: " << node_rank << std::endl;
 
     vm_args.version = JNI_VERSION_1_6;
     vm_args.nOptions = 4;
@@ -311,9 +307,12 @@ void setRendererConfigured(JVMData jvmData) {
     }
 }
 
-void setMPIParams(JVMData jvmData , int rank, int commSize) {
+void setMPIParams(JVMData jvmData , int rank, int node_rank, int commSize) {
     jfieldID rankField = jvmData.env->GetFieldID(jvmData.clazz, "rank", "I");
     jvmData.env->SetIntField(jvmData.obj, rankField, rank);
+
+    jfieldID nodeRankField = jvmData.env->GetFieldID(jvmData.clazz, "nodeRank", "I");
+    jvmData.env->SetIntField(jvmData.obj, nodeRankField, node_rank);
 
     jfieldID sizeField = jvmData.env->GetFieldID(jvmData.clazz, "commSize", "I");
     jvmData.env->SetIntField(jvmData.obj, sizeField, commSize);
