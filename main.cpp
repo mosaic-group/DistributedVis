@@ -63,7 +63,15 @@ int main() {
 //        sleep(10000);
 //    }
 
-    JVMData jvmData = func(rank, false);
+    MPI_Comm nodeComm;
+    MPI_Comm_split_type( MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, rank,
+                         MPI_INFO_NULL, &nodeComm );
+
+    int node_rank;
+    MPI_Comm_rank(nodeComm,&node_rank);
+
+
+    JVMData jvmData = setupJVM(node_rank, false);
 
     setPointerAddresses(jvmData, MPI_COMM_WORLD);
     setVDIGeneration(jvmData, true);

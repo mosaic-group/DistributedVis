@@ -9,7 +9,7 @@
 #define VERBOSE true
 #define USE_VULKAN true
 #define SEPARATE_DEPTH true
-#define SAVE_FILES false
+#define SAVE_FILES true
 
 int count = 0;
 
@@ -41,7 +41,7 @@ vis_type getVisType() {
 
 void registerNatives(JVMData jvmData);
 
-JVMData func(int rank, bool isCluster) {
+JVMData setupJVM(int node_rank, bool isCluster) {
     JVMData jvmData{};
 
     DIR *dir;
@@ -77,27 +77,28 @@ JVMData func(int rank, bool isCluster) {
     }
 
     JavaVMInitArgs vm_args;                        // Initialization arguments
-    auto *options = new JavaVMOption[4];   // JVM invocation options
+    auto *options = new JavaVMOption[5];   // JVM invocation options
     options[0].optionString = (char *)classPath.c_str();
 
     #if USE_VULKAN
     options[1].optionString = (char *)
-            "-Dscenery.VulkanRenderer.EnableValidations=false";
+            "-Dscenery.VulkanRenderer.EnableValidations=true";
     #else
     options[1].optionString = (char *)
             "-Dscenery.Renderer=OpenGLRenderer";
     #endif
 
-    #if VERBOSE
+
     options[2].optionString = (char *)
             "-Dorg.lwjgl.system.stackSize=1000";
-    #else
-    options[2].optionString = (char *)
-            "-Dscenery.LogLevel=warn";
-    #endif
 
     options[3].optionString = (char *)
             "-Dscenery.Headless=true";
+
+    options[4].optionString = (char *)
+            "-Dscenery.Renderer.DeviceId=" + node_rank;
+
+    std::cout << "Device ID was set to: " << node_rank << std::endl;
 
     vm_args.version = JNI_VERSION_1_6;
     vm_args.nOptions = 4;
