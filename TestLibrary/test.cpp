@@ -95,8 +95,14 @@ JVMData setupJVM(int node_rank, bool isCluster) {
     options[3].optionString = (char *)
             "-Dscenery.Headless=true";
 
-    options[4].optionString = (char *)
-            "-Dscenery.Renderer.DeviceId=" + node_rank;
+    if(node_rank == 0) {
+        options[4].optionString = (char *)
+                                          "-Dscenery.Renderer.DeviceId=0";
+    } else {
+        options[4].optionString = (char *)
+                                          "-Dscenery.Renderer.DeviceId=1";
+    }
+
 
     std::cout << "Device ID was set to: " << node_rank << std::endl;
 
