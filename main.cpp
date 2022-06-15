@@ -45,7 +45,10 @@ int * getVolumeDims(const std::string& path) {
 
 int main() {
     std::cout << "Hello, World!" << std::endl;
-    std::cout << "Long size " << sizeof(long) << " and jlong is: " << sizeof(jlong) << std::endl;
+
+    std::string dataset = "Kingsnake";
+    const bool is16bit = false;
+    bool generateVDIs = false;
 
     int provided;
     MPI_Init_thread(NULL, NULL, MPI_THREAD_SERIALIZED, &provided);
@@ -74,18 +77,17 @@ int main() {
     JVMData jvmData = setupJVM(false);
 
     setPointerAddresses(jvmData, MPI_COMM_WORLD);
-    setVDIGeneration(jvmData, true);
+    setVDIGeneration(jvmData, generateVDIs);
 
     if(true) {
 
 
-        int * volume_dimensions = getVolumeDims("/home/aryaman/Datasets/Volume/Stagbeetle/Part1");
+        int * volume_dimensions = getVolumeDims("/home/aryaman/Datasets/Volume/" + dataset + "/Part1");
         float pixelToWorld = 3.84f / (float)volume_dimensions[0]; //empirical
-        setPixelToWorld(jvmData, pixelToWorld);
+        setDatasetParams(jvmData, dataset, pixelToWorld);
         setMPIParams(jvmData, rank, node_rank, num_processes);
 
         std::thread render(&doRender, jvmData);
-        const bool is16bit = true;
 
         int slices_per_process[num_processes];
         int start_slice[num_processes];
@@ -112,12 +114,12 @@ int main() {
 
         prev_slices = start_slice[rank];
 
-        std::ifstream volumeFile ("/home/aryaman/Datasets/Volume/Stagbeetle/Part1/stagbeetle832x832x494.raw", std::ios::in | std::ios::binary);
+        std::ifstream volumeFile ("/home/aryaman/Datasets/Volume/" + dataset + "/Part1/" + dataset + ".raw", std::ios::in | std::ios::binary);
         if(!volumeFile.is_open()) {
             std::cerr<< "Could not open the volume file! " << std::endl;
         }
 
-        volumeFile.seekg(prev_slices * volume_dimensions[0] * volume_dimensions[1] * 2);
+        volumeFile.seekg(prev_slices * volume_dimensions[0] * volume_dimensions[1] * (is16bit? 2: 1));
 
         int chunks_remaining = num_volumes;
         slices_remaining = slices_per_process[rank];
@@ -132,14 +134,14 @@ int main() {
 
             std::cout << "Chunk " << i << " has dimensions: " << chunk_dimensions[0] << " " << chunk_dimensions[1] << " " << chunk_dimensions[2] << std::endl;
 
-            volume_sizes[i] = chunk_dimensions[0] * chunk_dimensions[1] * chunk_dimensions[2] * 2;
+            volume_sizes[i] = chunk_dimensions[0] * chunk_dimensions[1] * chunk_dimensions[2] * (is16bit? 2: 1);
 
             float pos [3];
             pos[0] = 0.f;
             pos[1] = 0.f;
             pos[2] = 1.f * (float)prev_slices * pixelToWorld;
 
-            createVolume(jvmData, i, chunk_dimensions, pos);
+            createVolume(jvmData, i, chunk_dimensions, pos, is16bit);
             char * buffer = new char[volume_sizes[i]];
             volumeFile.read (buffer, volume_sizes[i]);
             updateVolume(jvmData, i, buffer, volume_sizes[i]);

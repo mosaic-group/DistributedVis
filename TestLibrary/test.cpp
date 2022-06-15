@@ -93,7 +93,7 @@ JVMData setupJVM(bool isCluster) {
             "-Dorg.lwjgl.system.stackSize=1000";
 
     options[3].optionString = (char *)
-            "-Dscenery.Headless=true";
+            "-Dscenery.Headless=false";
 
     options[4].optionString = (char *)
                                       "-Dscenery.LogLevel=info";
@@ -244,7 +244,13 @@ void stopRendering(JVMData jvmData) {
     jvmData.jvm->DetachCurrentThread();
 }
 
-void setPixelToWorld(JVMData jvmData, float pixelToWorld) {
+void setDatasetParams(JVMData jvmData, std::string dataset, float pixelToWorld) {
+
+    jstring datasetName = jvmData.env->NewStringUTF(dataset.c_str());
+    jfieldID datasetField = jvmData.env->GetFieldID(jvmData.clazz, "dataset", "Ljava/lang/String;");
+    jvmData.env->SetObjectField(jvmData.obj, datasetField, datasetName);
+
+
     jfieldID pixelToWorldField = jvmData.env->GetFieldID(jvmData.clazz, "pixelToWorld", "F");
     jvmData.env->SetFloatField(jvmData.obj, pixelToWorldField, pixelToWorld);
 }
@@ -318,7 +324,7 @@ void setMPIParams(JVMData jvmData , int rank, int node_rank, int commSize) {
     jvmData.env->SetIntField(jvmData.obj, sizeField, commSize);
 }
 
-void createVolume(JVMData jvmData, int volumeID, int dimensions[], float pos[]) {
+void createVolume(JVMData jvmData, int volumeID, int dimensions[], float pos[], bool is16bit) {
 
     JNIEnv *env;
     jvmData.jvm->AttachCurrentThread(reinterpret_cast<void **>(&env), NULL);
@@ -336,7 +342,7 @@ void createVolume(JVMData jvmData, int volumeID, int dimensions[], float pos[]) 
 
     jintArray jdims = env->NewIntArray(3);
     jfloatArray jpos = env->NewFloatArray(3);
-    jboolean is16bit = true;
+//    jboolean is16bit = true;
 
     env->SetIntArrayRegion(jdims, 0, 3, dimensions);
     env->SetFloatArrayRegion(jpos, 0, 3, pos);

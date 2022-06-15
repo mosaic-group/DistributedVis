@@ -18,10 +18,10 @@ struct JVMData {
 JVMData setupJVM(bool isCluster);
 void setPointerAddresses(JVMData jvmData, MPI_Comm renderComm);
 void stopRendering(JVMData jvmData);
-void setPixelToWorld(JVMData jvmData , float pixelToWorld);
+void setDatasetParams(JVMData jvmData, std::string dataset, float pixelToWorld);
 void setMPIParams(JVMData jvmData , int rank, int node_rank, int commSize);
 void setVDIGeneration(JVMData jvmData , bool generateVDIs);
-void createVolume(JVMData jvmData, int volumeID, int dimensions[], float pos[]);
+void createVolume(JVMData jvmData, int volumeID, int dimensions[], float pos[], bool is16bit);
 void updateVolume(JVMData jvmData, int volumeID, char * buffer, long buffer_size);
 void setRendererConfigured(JVMData jvmData);
 void doRender(JVMData jvmData);
