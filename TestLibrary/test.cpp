@@ -9,7 +9,7 @@
 #define VERBOSE true
 #define USE_VULKAN true
 #define SEPARATE_DEPTH true
-#define SAVE_FILES true
+#define SAVE_FILES false
 
 int count = 0;
 
@@ -22,6 +22,19 @@ std::string datasetName = "";
 
 auto begin = std::chrono::high_resolution_clock::now();
 auto end = std::chrono::high_resolution_clock::now();
+
+auto begin1 = std::chrono::high_resolution_clock::now();
+auto end1 = std::chrono::high_resolution_clock::now();
+
+auto begin2 = std::chrono::high_resolution_clock::now();
+auto end2 = std::chrono::high_resolution_clock::now();
+
+auto begin3 = std::chrono::high_resolution_clock::now();
+auto end3 = std::chrono::high_resolution_clock::now();
+
+
+auto begin4 = std::chrono::high_resolution_clock::now();
+auto end4 = std::chrono::high_resolution_clock::now();
 
 //int totalSupersegments = windowWidth * windowHeight * numSupersegments *
 
@@ -453,10 +466,24 @@ void distributeVDIs(JNIEnv *e, jobject clazzObject, jobject subVDICol, jobject s
 
     printf("Got MPI comm, trying alltoall\n");
 
+
+    begin1 = std::chrono::high_resolution_clock::now();
     MPI_Alltoall(ptrCol, windowHeight * windowWidth * numSupersegments * 4 * 4 / commSize, MPI_BYTE, recvBufCol, windowHeight * windowWidth * numSupersegments * 4 * 4 / commSize, MPI_BYTE, MPI_COMM_WORLD);
+    end1 = std::chrono::high_resolution_clock::now();
+
+    auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end1 - begin1);
+
+    std::cout<<"AllToAll color took in seconds: " << elapsed.count() * 1e-9 << std::endl;
 
 #if SEPARATE_DEPTH
-        MPI_Alltoall(ptrDepth, windowHeight * windowWidth * numSupersegments * 4 * 2 / commSize, MPI_BYTE, recvBufDepth, windowHeight * windowWidth * numSupersegments * 4 * 2 / commSize, MPI_BYTE, MPI_COMM_WORLD);
+    begin2 = std::chrono::high_resolution_clock::now();
+    MPI_Alltoall(ptrDepth, windowHeight * windowWidth * numSupersegments * 4 * 2 / commSize, MPI_BYTE, recvBufDepth, windowHeight * windowWidth * numSupersegments * 4 * 2 / commSize, MPI_BYTE, MPI_COMM_WORLD);
+    end2 = std::chrono::high_resolution_clock::now();
+
+    elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end2 - begin2);
+
+    std::cout<<"AllToAll depth took seconds: " << elapsed.count() * 1e-9 << std::endl;
+
 #endif
 
     printf("Finished both alltoalls\n");
@@ -521,12 +548,26 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
 
     auto * renComm = reinterpret_cast<MPI_Comm *>(mpiPointer);
 
+
+    begin3 = std::chrono::high_resolution_clock::now();
     MPI_Gather(ptrCol, windowWidth * windowHeight * numOutputSupsegs * 4 * 4 / commSize, MPI_BYTE, gather_recv_color, windowWidth * windowHeight * numOutputSupsegs * 4 * 4 / commSize, MPI_BYTE, root, MPI_COMM_WORLD);
+    end3 = std::chrono::high_resolution_clock::now();
+
+    auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end3 - begin3);
+
+    std::cout<<"Gather color took seconds: " << elapsed.count() * 1e-9 << std::endl;
+
+    begin4 = std::chrono::high_resolution_clock::now();
     MPI_Gather(ptrDepth, windowWidth  * windowHeight * numOutputSupsegs * 4 * 2 / commSize, MPI_BYTE,  gather_recv_depth, windowWidth * windowHeight * numOutputSupsegs * 4 * 2 / commSize, MPI_BYTE, root, MPI_COMM_WORLD);
+    end4 = std::chrono::high_resolution_clock::now();
+
+    elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end4 - begin4);
+
+    std::cout<<"Gather depth took seconds: " << elapsed.count() * 1e-9 << std::endl;
     //The data is here now!
 
     end = std::chrono::high_resolution_clock::now();
-    auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
+    elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
 
     printf("Time measured: %.3f seconds.\n", elapsed.count() * 1e-9);
 

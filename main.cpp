@@ -110,9 +110,12 @@ int main() {
             prev_slices += slices_per_process[i];
         }
 
-        long volume_size = volume_dimensions[0] * volume_dimensions[1] * slices_per_process[rank] * (is16bit? 2: 1);
+        long int volume_size = (long int)volume_dimensions[0] * (long int)volume_dimensions[1] * (long int)slices_per_process[rank] * (is16bit? 2: 1);
 
         int num_volumes = ceil((double)volume_size / 2000000000.0); // Divide by 2 GB. each process will handle num_volumes volumes
+
+        std::cout<<"Volume size is: " << volume_size << std::endl;
+        std::cout<<"Num volumes is: " << num_volumes << std::endl;
 
         long volume_sizes[num_volumes]; // this array will store the size (in Bytes) of each volume in the scene of a given visualization process
 
