@@ -48,7 +48,8 @@ int main() {
 
     std::string dataset = "Kingsnake";
     const bool is16bit = false;
-    bool generateVDIs = false;
+    bool generateVDIs = true;
+    bool isCluster = false;
 
     int provided;
     MPI_Init_thread(NULL, NULL, MPI_THREAD_SERIALIZED, &provided);
@@ -73,8 +74,11 @@ int main() {
     int node_rank;
     MPI_Comm_rank(nodeComm,&node_rank);
 
+    if(!isCluster) {
+        node_rank = 0;
+    }
 
-    JVMData jvmData = setupJVM(false);
+    JVMData jvmData = setupJVM(isCluster);
 
     setPointerAddresses(jvmData, MPI_COMM_WORLD);
     setVDIGeneration(jvmData, generateVDIs);

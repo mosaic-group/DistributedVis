@@ -17,6 +17,9 @@ int windowWidth = 1280;
 int windowHeight = 720;
 int numSupersegments = 20;
 int numOutputSupsegs = 20;
+
+std::string datasetName = "";
+
 auto begin = std::chrono::high_resolution_clock::now();
 auto end = std::chrono::high_resolution_clock::now();
 
@@ -246,10 +249,11 @@ void stopRendering(JVMData jvmData) {
 
 void setDatasetParams(JVMData jvmData, std::string dataset, float pixelToWorld) {
 
-    jstring datasetName = jvmData.env->NewStringUTF(dataset.c_str());
+    jstring jdataset = jvmData.env->NewStringUTF(dataset.c_str());
     jfieldID datasetField = jvmData.env->GetFieldID(jvmData.clazz, "dataset", "Ljava/lang/String;");
-    jvmData.env->SetObjectField(jvmData.obj, datasetField, datasetName);
+    jvmData.env->SetObjectField(jvmData.obj, datasetField, jdataset);
 
+    datasetName = dataset;
 
     jfieldID pixelToWorldField = jvmData.env->GetFieldID(jvmData.clazz, "pixelToWorld", "F");
     jvmData.env->SetFloatField(jvmData.obj, pixelToWorldField, pixelToWorld);
@@ -528,7 +532,7 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
 
     begin = std::chrono::high_resolution_clock::now();
 
-    std::string dataset = "DistributedStagbeetle";
+    std::string dataset = datasetName;
 
     dataset += "_" + std::to_string(commSize) + "_" + std::to_string(myRank);
 
