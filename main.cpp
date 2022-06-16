@@ -117,7 +117,7 @@ int main() {
         std::cout<<"Volume size is: " << volume_size << std::endl;
         std::cout<<"Num volumes is: " << num_volumes << std::endl;
 
-        long volume_sizes[num_volumes]; // this array will store the size (in Bytes) of each volume in the scene of a given visualization process
+        long int volume_sizes[num_volumes]; // this array will store the size (in Bytes) of each volume in the scene of a given visualization process
 
         prev_slices = start_slice[rank];
 
@@ -126,7 +126,7 @@ int main() {
             std::cerr<< "Could not open the volume file! " << std::endl;
         }
 
-        volumeFile.seekg(prev_slices * volume_dimensions[0] * volume_dimensions[1] * (is16bit? 2: 1));
+        volumeFile.seekg((long int)prev_slices * (long int)volume_dimensions[0] * (long int)volume_dimensions[1] * (is16bit? 2: 1));
 
         int chunks_remaining = num_volumes;
         slices_remaining = slices_per_process[rank];
@@ -141,7 +141,7 @@ int main() {
 
             std::cout << "Chunk " << i << " has dimensions: " << chunk_dimensions[0] << " " << chunk_dimensions[1] << " " << chunk_dimensions[2] << std::endl;
 
-            volume_sizes[i] = chunk_dimensions[0] * chunk_dimensions[1] * chunk_dimensions[2] * (is16bit? 2: 1);
+            volume_sizes[i] = (long int)chunk_dimensions[0] * (long int)chunk_dimensions[1] * (long int)chunk_dimensions[2] * (is16bit? 2: 1);
 
             float pos [3];
             pos[0] = 0.f;

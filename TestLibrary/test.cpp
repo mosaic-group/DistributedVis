@@ -9,7 +9,7 @@
 #define VERBOSE true
 #define USE_VULKAN true
 #define SEPARATE_DEPTH true
-#define SAVE_FILES false
+#define SAVE_FILES true
 
 int count = 0;
 
@@ -109,7 +109,7 @@ JVMData setupJVM(bool isCluster) {
             "-Dorg.lwjgl.system.stackSize=1000";
 
     options[3].optionString = (char *)
-            "-Dscenery.Headless=false";
+            "-Dscenery.Headless=true";
 
     options[4].optionString = (char *)
                                       "-Dscenery.LogLevel=info";
@@ -373,7 +373,7 @@ void createVolume(JVMData jvmData, int volumeID, int dimensions[], float pos[], 
     jvmData.jvm->DetachCurrentThread();
 }
 
-void updateVolume(JVMData jvmData, int volumeID, char * buffer, long buffer_size) {
+void updateVolume(JVMData jvmData, int volumeID, char * buffer, long int buffer_size) {
 
     std::cout << "Buffer size is: " << buffer_size << std::endl;
 
