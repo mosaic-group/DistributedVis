@@ -93,7 +93,7 @@ JVMData setupJVM(bool isCluster) {
     }
 
     JavaVMInitArgs vm_args;                        // Initialization arguments
-    auto *options = new JavaVMOption[5];   // JVM invocation options
+    auto *options = new JavaVMOption[6];   // JVM invocation options
     options[0].optionString = (char *)classPath.c_str();
 
     #if USE_VULKAN
@@ -116,6 +116,14 @@ JVMData setupJVM(bool isCluster) {
 
 //    options[4].optionString = (char *)
 //                                      "-Dscenery.LogLevel=debug";
+
+    if(isCluster) {
+        options[4].optionString = (char *)
+                "-Dorg.lwjgl.system.SharedLibraryExtractPath=/scratch/ws/1/argupta-distributed_vdis/";
+    } else {
+        options[4].optionString = (char *)
+                "-Dorg.lwjgl.system.SharedLibraryExtractPath=/tmp/";
+    }
 
 
     vm_args.version = JNI_VERSION_1_6;
