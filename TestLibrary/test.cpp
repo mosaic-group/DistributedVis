@@ -21,6 +21,12 @@ int numOutputSupsegs = 20;
 
 std::string datasetName = "";
 
+auto begin_copy1 = std::chrono::high_resolution_clock::now();
+auto end_copy1 = std::chrono::high_resolution_clock::now();
+
+auto begin_copy2 = std::chrono::high_resolution_clock::now();
+auto end_copy2 = std::chrono::high_resolution_clock::now();
+
 auto begin = std::chrono::high_resolution_clock::now();
 auto end = std::chrono::high_resolution_clock::now();
 
@@ -460,8 +466,19 @@ void distributeVDIs(JNIEnv *e, jobject clazzObject, jobject subVDICol, jobject s
     ptrDepth = e->GetDirectBufferAddress(subVDIDepth);
 #endif
 
+    begin_copy1 = std::chrono::high_resolution_clock::now();
     memcpy(subColor_copy, ptrCol, windowHeight * windowWidth * numSupersegments * 4 * 4);
+    end_copy1 = std::chrono::high_resolution_clock::now();
+
+    auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end_copy1 - begin_copy1);
+    std::cout<<"Color copy in distributed took: " << elapsed.count() * 1e-9 << std::endl;
+
+    begin_copy2 = std::chrono::high_resolution_clock::now();
     memcpy(subDepth_copy, ptrDepth, windowHeight * windowWidth * numSupersegments * 4 * 2);
+    end_copy2 = std::chrono::high_resolution_clock::now();
+
+    elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end_copy2 - begin_copy2);
+    std::cout<<"Depth copy in distributed took: " << elapsed.count() * 1e-9 << std::endl;
 
     void * recvBufCol;
     recvBufCol = reinterpret_cast<void *>(colPointer);
@@ -487,7 +504,7 @@ void distributeVDIs(JNIEnv *e, jobject clazzObject, jobject subVDICol, jobject s
     MPI_Alltoall(subColor_copy, windowHeight * windowWidth * numSupersegments * 4 * 4 / commSize, MPI_BYTE, recvBufCol, windowHeight * windowWidth * numSupersegments * 4 * 4 / commSize, MPI_BYTE, MPI_COMM_WORLD);
     end1 = std::chrono::high_resolution_clock::now();
 
-    auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end1 - begin1);
+    elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end1 - begin1);
 
     std::cout<<"AllToAll color took in seconds: " << elapsed.count() * 1e-9 << std::endl;
 
@@ -548,8 +565,20 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
     void *ptrCol = e->GetDirectBufferAddress(compositedVDIColor);
     void *ptrDepth = e->GetDirectBufferAddress(compositedVDIDepth);
 
+    begin_copy1 = std::chrono::high_resolution_clock::now();
     memcpy(compositedColor_copy, ptrCol, windowWidth * windowHeight * numOutputSupsegs * 4 * 4 / commSize);
+    end_copy1 = std::chrono::high_resolution_clock::now();
+
+    auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end_copy1 - begin_copy1);
+    std::cout<<"Color copy in gather took: " << elapsed.count() * 1e-9 << std::endl;
+
+    begin_copy2 = std::chrono::high_resolution_clock::now();
     memcpy(compositedDepth_copy, ptrDepth, windowWidth * windowHeight * numOutputSupsegs * 2 * 4 / commSize);
+    end_copy2 = std::chrono::high_resolution_clock::now();
+
+    elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end_copy2 - begin_copy2);
+    std::cout<<"Depth copy in gather took: " << elapsed.count() * 1e-9 << std::endl;
+
 
     void * gather_recv_color = reinterpret_cast<void *>(colPointer);
     void * gather_recv_depth = reinterpret_cast<void *>(depthPointer);
@@ -572,7 +601,7 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
     MPI_Gather(compositedColor_copy, windowWidth * windowHeight * numOutputSupsegs * 4 * 4 / commSize, MPI_BYTE, gather_recv_color, windowWidth * windowHeight * numOutputSupsegs * 4 * 4 / commSize, MPI_BYTE, root, MPI_COMM_WORLD);
     end3 = std::chrono::high_resolution_clock::now();
 
-    auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end3 - begin3);
+    elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end3 - begin3);
 
     std::cout<<"Gather color took seconds: " << elapsed.count() * 1e-9 << std::endl;
 
