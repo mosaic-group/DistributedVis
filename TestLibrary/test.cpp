@@ -5,6 +5,7 @@
 #include <mpi.h>
 #include <ctime>
 #include <chrono>
+#include <string.h>
 
 #define VERBOSE false
 #define USE_VULKAN true
