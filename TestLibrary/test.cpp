@@ -484,7 +484,7 @@ void distributeVDIs(JNIEnv *e, jobject clazzObject, jobject subVDICol, jobject s
 
 #endif
 
-    if(VERBOSE) {printf("Finished both alltoalls\n")};
+    if(VERBOSE) printf("Finished both alltoalls\n");
 
     jclass clazz = e->GetObjectClass(clazzObject);
     jmethodID compositeMethod = e->GetMethodID(clazz, "compositeVDIs", "(Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;)V");
