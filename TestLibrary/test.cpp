@@ -32,6 +32,11 @@ auto end2 = std::chrono::high_resolution_clock::now();
 auto begin3 = std::chrono::high_resolution_clock::now();
 auto end3 = std::chrono::high_resolution_clock::now();
 
+void * subColor_copy;
+void * subDepth_copy;
+
+void * compositedColor_copy;
+void * compositedDepth_copy;
 
 auto begin4 = std::chrono::high_resolution_clock::now();
 auto end4 = std::chrono::high_resolution_clock::now();
@@ -291,6 +296,15 @@ void setPointerAddresses(JVMData jvmData, MPI_Comm renderComm) {
     void * gatherColorPointer = malloc(windowHeight * windowWidth * numOutputSupsegs * 4 * 4);
     void * gatherDepthPointer = malloc(windowHeight * windowWidth * numOutputSupsegs * 4 * 2);
 
+    int commSize;
+    MPI_Comm_size(MPI_COMM_WORLD, &commSize);
+
+    subColor_copy = malloc(windowHeight * windowWidth * numSupersegments * 4 * 4);
+    subDepth_copy = malloc(windowHeight * windowWidth * numSupersegments * 2 * 4);
+
+    compositedColor_copy = malloc(windowWidth * windowHeight * numOutputSupsegs * 4 * 4 / commSize);
+    compositedDepth_copy = malloc(windowWidth * windowHeight * numOutputSupsegs * 4 * 2 / commSize);
+
 //    a = malloc(windowHeight * windowWidth * numSupersegments * 4 * 4);
 //    b = malloc(windowWidth * windowHeight * numSupersegments * 4 * 2);
 //    c = malloc(windowHeight * windowWidth * numOutputSupsegs * 4 * 4);
@@ -445,6 +459,9 @@ void distributeVDIs(JNIEnv *e, jobject clazzObject, jobject subVDICol, jobject s
     ptrDepth = e->GetDirectBufferAddress(subVDIDepth);
 #endif
 
+    memcpy(subColor_copy, ptrCol, windowHeight * windowWidth * numSupersegments * 4 * 4);
+    memcpy(subDepth_copy, ptrDepth, windowHeight * windowWidth * numSupersegments * 4 * 2);
+
     void * recvBufCol;
     recvBufCol = reinterpret_cast<void *>(colPointer);
 
@@ -466,7 +483,7 @@ void distributeVDIs(JNIEnv *e, jobject clazzObject, jobject subVDICol, jobject s
 
 
     begin1 = std::chrono::high_resolution_clock::now();
-    MPI_Alltoall(ptrCol, windowHeight * windowWidth * numSupersegments * 4 * 4 / commSize, MPI_BYTE, recvBufCol, windowHeight * windowWidth * numSupersegments * 4 * 4 / commSize, MPI_BYTE, MPI_COMM_WORLD);
+    MPI_Alltoall(subColor_copy, windowHeight * windowWidth * numSupersegments * 4 * 4 / commSize, MPI_BYTE, recvBufCol, windowHeight * windowWidth * numSupersegments * 4 * 4 / commSize, MPI_BYTE, MPI_COMM_WORLD);
     end1 = std::chrono::high_resolution_clock::now();
 
     auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end1 - begin1);
@@ -475,7 +492,7 @@ void distributeVDIs(JNIEnv *e, jobject clazzObject, jobject subVDICol, jobject s
 
 #if SEPARATE_DEPTH
     begin2 = std::chrono::high_resolution_clock::now();
-    MPI_Alltoall(ptrDepth, windowHeight * windowWidth * numSupersegments * 4 * 2 / commSize, MPI_BYTE, recvBufDepth, windowHeight * windowWidth * numSupersegments * 4 * 2 / commSize, MPI_BYTE, MPI_COMM_WORLD);
+    MPI_Alltoall(subDepth_copy, windowHeight * windowWidth * numSupersegments * 4 * 2 / commSize, MPI_BYTE, recvBufDepth, windowHeight * windowWidth * numSupersegments * 4 * 2 / commSize, MPI_BYTE, MPI_COMM_WORLD);
     end2 = std::chrono::high_resolution_clock::now();
 
     elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end2 - begin2);
@@ -530,6 +547,9 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
     void *ptrCol = e->GetDirectBufferAddress(compositedVDIColor);
     void *ptrDepth = e->GetDirectBufferAddress(compositedVDIDepth);
 
+    memcpy(compositedColor_copy, ptrCol, windowWidth * windowHeight * numOutputSupsegs * 4 * 4 / commSize);
+    memcpy(compositedDepth_copy, ptrDepth, windowWidth * windowHeight * numOutputSupsegs * 2 * 4 / commSize);
+
     void * gather_recv_color = reinterpret_cast<void *>(colPointer);
     void * gather_recv_depth = reinterpret_cast<void *>(depthPointer);
 
@@ -548,7 +568,7 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
 
 
     begin3 = std::chrono::high_resolution_clock::now();
-    MPI_Gather(ptrCol, windowWidth * windowHeight * numOutputSupsegs * 4 * 4 / commSize, MPI_BYTE, gather_recv_color, windowWidth * windowHeight * numOutputSupsegs * 4 * 4 / commSize, MPI_BYTE, root, MPI_COMM_WORLD);
+    MPI_Gather(compositedColor_copy, windowWidth * windowHeight * numOutputSupsegs * 4 * 4 / commSize, MPI_BYTE, gather_recv_color, windowWidth * windowHeight * numOutputSupsegs * 4 * 4 / commSize, MPI_BYTE, root, MPI_COMM_WORLD);
     end3 = std::chrono::high_resolution_clock::now();
 
     auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end3 - begin3);
@@ -556,7 +576,7 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
     std::cout<<"Gather color took seconds: " << elapsed.count() * 1e-9 << std::endl;
 
     begin4 = std::chrono::high_resolution_clock::now();
-    MPI_Gather(ptrDepth, windowWidth  * windowHeight * numOutputSupsegs * 4 * 2 / commSize, MPI_BYTE,  gather_recv_depth, windowWidth * windowHeight * numOutputSupsegs * 4 * 2 / commSize, MPI_BYTE, root, MPI_COMM_WORLD);
+    MPI_Gather(compositedDepth_copy, windowWidth  * windowHeight * numOutputSupsegs * 4 * 2 / commSize, MPI_BYTE,  gather_recv_depth, windowWidth * windowHeight * numOutputSupsegs * 4 * 2 / commSize, MPI_BYTE, root, MPI_COMM_WORLD);
     end4 = std::chrono::high_resolution_clock::now();
 
     elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end4 - begin4);
