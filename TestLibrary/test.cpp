@@ -499,7 +499,7 @@ void distributeVDIs(JNIEnv *e, jobject clazzObject, jobject subVDICol, jobject s
 
     auto * renComm = reinterpret_cast<MPI_Comm *>(mpiPointer);
 
-
+    MPI_Barrier(MPI_COMM_WORLD);
     begin1 = std::chrono::high_resolution_clock::now();
     MPI_Alltoall(subColor_copy, windowHeight * windowWidth * numSupersegments * 4 * 4 / commSize, MPI_BYTE, recvBufCol, windowHeight * windowWidth * numSupersegments * 4 * 4 / commSize, MPI_BYTE, MPI_COMM_WORLD);
     end1 = std::chrono::high_resolution_clock::now();
@@ -596,7 +596,7 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
 
     auto * renComm = reinterpret_cast<MPI_Comm *>(mpiPointer);
 
-
+    MPI_Barrier(MPI_COMM_WORLD);
     begin3 = std::chrono::high_resolution_clock::now();
     MPI_Gather(compositedColor_copy, windowWidth * windowHeight * numOutputSupsegs * 4 * 4 / commSize, MPI_BYTE, gather_recv_color, windowWidth * windowHeight * numOutputSupsegs * 4 * 4 / commSize, MPI_BYTE, root, MPI_COMM_WORLD);
     end3 = std::chrono::high_resolution_clock::now();
