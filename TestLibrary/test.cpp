@@ -6,7 +6,7 @@
 #include <ctime>
 #include <chrono>
 
-#define VERBOSE true
+#define VERBOSE false
 #define USE_VULKAN true
 #define SEPARATE_DEPTH true
 #define SAVE_FILES true
@@ -438,18 +438,12 @@ void doRender(JVMData jvmData) {
 void distributeVDIs(JNIEnv *e, jobject clazzObject, jobject subVDICol, jobject subVDIDepth, jint sizePerProcess, jint commSize, jlong colPointer, jlong depthPointer, jlong mpiPointer) {
     if (VERBOSE) std::cout<<"In distribute VDIs function. Comm size is "<<commSize<<std::endl;
 
-    printf("Here 1\n");
-
     void *ptrCol = e->GetDirectBufferAddress(subVDICol);
     void *ptrDepth = nullptr;
-
-    printf("Here 1.5\n");
 
 #if SEPARATE_DEPTH
     ptrDepth = e->GetDirectBufferAddress(subVDIDepth);
 #endif
-
-    printf("Here 2\n");
 
     void * recvBufCol;
     recvBufCol = reinterpret_cast<void *>(colPointer);
@@ -468,11 +462,7 @@ void distributeVDIs(JNIEnv *e, jobject clazzObject, jobject subVDICol, jobject s
     }
 #endif
 
-    printf("Trying to get the MPI comm\n");
-
     auto * renComm = reinterpret_cast<MPI_Comm *>(mpiPointer);
-
-    printf("Got MPI comm, trying alltoall\n");
 
 
     begin1 = std::chrono::high_resolution_clock::now();
@@ -494,7 +484,7 @@ void distributeVDIs(JNIEnv *e, jobject clazzObject, jobject subVDICol, jobject s
 
 #endif
 
-    printf("Finished both alltoalls\n");
+    if(VERBOSE) {printf("Finished both alltoalls\n")};
 
     jclass clazz = e->GetObjectClass(clazzObject);
     jmethodID compositeMethod = e->GetMethodID(clazz, "compositeVDIs", "(Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;)V");
@@ -532,10 +522,10 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
     std::cout << "depth pointer in long: " << depthPointer << std::endl;
     std::cout << "In void *, depth is: " << reinterpret_cast<void *>(depthPointer) << std::endl;
 
-    std::cout<<"Col buff capacity: " << e->GetDirectBufferCapacity(compositedVDIColor) <<std::endl;
-    std::cout<<"Depth buff capacity: " << e->GetDirectBufferCapacity(compositedVDIDepth) <<std::endl;
+    if (VERBOSE) std::cout<<"Col buff capacity: " << e->GetDirectBufferCapacity(compositedVDIColor) <<std::endl;
+    if (VERBOSE) std::cout<<"Depth buff capacity: " << e->GetDirectBufferCapacity(compositedVDIDepth) <<std::endl;
 
-    std::cout<<"CompositedVDILen: " << compositedVDILen << "root" << root << " myRank: " << myRank << " commSize: " << commSize << std::endl;
+    if (VERBOSE) std::cout<<"CompositedVDILen: " << compositedVDILen << "root" << root << " myRank: " << myRank << " commSize: " << commSize << std::endl;
 
     void *ptrCol = e->GetDirectBufferAddress(compositedVDIColor);
     void *ptrDepth = e->GetDirectBufferAddress(compositedVDIDepth);
