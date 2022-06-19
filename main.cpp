@@ -88,7 +88,7 @@ int main() {
 
         int * volume_dimensions = getVolumeDims("/home/aryaman/Datasets/Volume/" + dataset + "/Part1");
         float pixelToWorld = 3.84f / (float)volume_dimensions[0]; //empirical
-        setDatasetParams(jvmData, dataset, pixelToWorld);
+        setDatasetParams(jvmData, dataset, pixelToWorld, volume_dimensions);
         setMPIParams(jvmData, rank, node_rank, num_processes);
 
         std::thread render(&doRender, jvmData);

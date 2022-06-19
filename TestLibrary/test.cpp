@@ -289,7 +289,7 @@ void stopRendering(JVMData jvmData) {
     jvmData.jvm->DetachCurrentThread();
 }
 
-void setDatasetParams(JVMData jvmData, std::string dataset, float pixelToWorld) {
+void setDatasetParams(JVMData jvmData, std::string dataset, float pixelToWorld, int dimensions[]) {
 
     jstring jdataset = jvmData.env->NewStringUTF(dataset.c_str());
     jfieldID datasetField = jvmData.env->GetFieldID(jvmData.clazz, "dataset", "Ljava/lang/String;");
@@ -299,6 +299,28 @@ void setDatasetParams(JVMData jvmData, std::string dataset, float pixelToWorld) 
 
     jfieldID pixelToWorldField = jvmData.env->GetFieldID(jvmData.clazz, "pixelToWorld", "F");
     jvmData.env->SetFloatField(jvmData.obj, pixelToWorldField, pixelToWorld);
+
+    jintArray jdims = jvmData.env->NewIntArray(3);
+    jvmData.env->SetIntArrayRegion(jdims, 0, 3, dimensions);
+
+    std::cout << "Trying to set the volume dims" <<std::endl;
+
+    jmethodID setVolumeDimsMethod = jvmData.env->GetMethodID(jvmData.clazz, "setVolumeDims", "([I)V");
+    if(setVolumeDimsMethod == nullptr) {
+        if (jvmData.env->ExceptionOccurred()) {
+            jvmData.env->ExceptionDescribe();
+        } else {
+            std::cout << "ERROR: function setVolumeDims not found!";
+        }
+    } else {
+        std::cout << "setVolumeDims function successfully found!";
+    }
+
+    jvmData.env->CallVoidMethod(jvmData.obj, setVolumeDimsMethod, jdims);
+    if(jvmData.env->ExceptionOccurred()) {
+        jvmData.env->ExceptionDescribe();
+        jvmData.env->ExceptionClear();
+    }
 }
 
 void setVDIGeneration(JVMData jvmData, bool generateVDIs) {
