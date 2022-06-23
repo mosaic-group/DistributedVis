@@ -541,7 +541,7 @@ void distributeVDIs(JNIEnv *e, jobject clazzObject, jobject subVDICol, jobject s
 
     auto elapsed_col = std::chrono::duration_cast<std::chrono::nanoseconds>(end1 - begin1);
 
-    std::cout<<"AllToAll color took in seconds: " << elapsed_col.count() * 1e-9 << std::endl;
+    std::cout<<"Iteration: "<< num_alltoall << " AllToAll color took in seconds: " << elapsed_col.count() * 1e-9 << std::endl;
 
 #if SEPARATE_DEPTH
     begin2 = std::chrono::high_resolution_clock::now();
@@ -662,7 +662,7 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
 
     auto elapsed_col = std::chrono::duration_cast<std::chrono::nanoseconds>(end3 - begin3);
 
-    std::cout<<"Gather color took seconds: " << elapsed_col.count() * 1e-9 << std::endl;
+    std::cout<<"Iteration: " << num_gather << " Gather color took seconds: " << elapsed_col.count() * 1e-9 << std::endl;
 
     begin4 = std::chrono::high_resolution_clock::now();
 //    MPI_Gather(compositedDepth_copy, windowWidth  * windowHeight * numOutputSupsegs * 4 * 2 / commSize, MPI_BYTE,  gather_recv_depth, windowWidth * windowHeight * numOutputSupsegs * 4 * 2 / commSize, MPI_BYTE, root, MPI_COMM_WORLD);
