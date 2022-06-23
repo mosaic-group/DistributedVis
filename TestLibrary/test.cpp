@@ -534,6 +534,7 @@ void distributeVDIs(JNIEnv *e, jobject clazzObject, jobject subVDICol, jobject s
     auto * renComm = reinterpret_cast<MPI_Comm *>(mpiPointer);
 
     MPI_Barrier(MPI_COMM_WORLD);
+    begin = std::chrono::high_resolution_clock::now();
     begin1 = std::chrono::high_resolution_clock::now();
 //    MPI_Alltoall(subColor_copy, windowHeight * windowWidth * numSupersegments * 4 * 4 / commSize, MPI_BYTE, recvBufCol, windowHeight * windowWidth * numSupersegments * 4 * 4 / commSize, MPI_BYTE, MPI_COMM_WORLD);
     MPI_Alltoall(ptrCol, windowHeight * windowWidth * numSupersegments * 4 * 4 / commSize, MPI_BYTE, recvBufCol, windowHeight * windowWidth * numSupersegments * 4 * 4 / commSize, MPI_BYTE, MPI_COMM_WORLD);
@@ -707,8 +708,6 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
         double average_overall = total_overall / (double) iterations;
         std::cout<< "Number of gathers: " << num_gather << " average_gather gather time so far: " << average_gather << " average overall so far: " << average_overall <<std::endl;
     }
-
-    begin = std::chrono::high_resolution_clock::now();
 
     std::string dataset = datasetName;
 
