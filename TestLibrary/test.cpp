@@ -132,7 +132,7 @@ JVMData setupJVM(bool isCluster) {
             "-Dscenery.Headless=true";
 
     options[4].optionString = (char *)
-                                      "-Dscenery.LogLevel=info";
+                                      "-Dscenery.LogLevel=error";
 
 //    options[4].optionString = (char *)
 //                                      "-Dscenery.LogLevel=debug";
@@ -542,7 +542,7 @@ void distributeVDIs(JNIEnv *e, jobject clazzObject, jobject subVDICol, jobject s
 
     auto elapsed_col = std::chrono::duration_cast<std::chrono::nanoseconds>(end1 - begin1);
 
-    std::cout<<"Iteration: "<< num_alltoall << " AllToAll color took in seconds: " << elapsed_col.count() * 1e-9 << std::endl;
+//    std::cout<<"Iteration: "<< num_alltoall << " AllToAll color took in seconds: " << elapsed_col.count() * 1e-9 << std::endl;
 
 #if SEPARATE_DEPTH
     begin2 = std::chrono::high_resolution_clock::now();
@@ -552,7 +552,7 @@ void distributeVDIs(JNIEnv *e, jobject clazzObject, jobject subVDICol, jobject s
 
     auto elapsed_depth = std::chrono::duration_cast<std::chrono::nanoseconds>(end2 - begin2);
 
-    std::cout<<"AllToAll depth took seconds: " << elapsed_depth.count() * 1e-9 << std::endl;
+//    std::cout<<"AllToAll depth took seconds: " << elapsed_depth.count() * 1e-9 << std::endl;
 
 #endif
 
@@ -572,7 +572,7 @@ void distributeVDIs(JNIEnv *e, jobject clazzObject, jobject subVDICol, jobject s
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    if(((num_alltoall % 30) == 0) && (rank == 0)) {
+    if(((num_alltoall % 50) == 0) && (rank == 0)) {
         int iterations = num_alltoall - warm_up_iterations;
         double average_alltoall = total_alltoall / (double) iterations;
         std::cout<< "Number of alltoalls: " << num_alltoall << " average alltoall time so far: " << average_alltoall << std::endl;
@@ -611,10 +611,10 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
 
     if (VERBOSE) std::cout<<"In Gather function " <<std::endl;
 
-    std::cout << "color pointer in long: " << colPointer << std::endl;
-    std::cout << "In void *, color is: " << reinterpret_cast<void *>(colPointer) << std::endl;
-    std::cout << "depth pointer in long: " << depthPointer << std::endl;
-    std::cout << "In void *, depth is: " << reinterpret_cast<void *>(depthPointer) << std::endl;
+//    std::cout << "color pointer in long: " << colPointer << std::endl;
+//    std::cout << "In void *, color is: " << reinterpret_cast<void *>(colPointer) << std::endl;
+//    std::cout << "depth pointer in long: " << depthPointer << std::endl;
+//    std::cout << "In void *, depth is: " << reinterpret_cast<void *>(depthPointer) << std::endl;
 
     if (VERBOSE) std::cout<<"Col buff capacity: " << e->GetDirectBufferCapacity(compositedVDIColor) <<std::endl;
     if (VERBOSE) std::cout<<"Depth buff capacity: " << e->GetDirectBufferCapacity(compositedVDIDepth) <<std::endl;
@@ -663,7 +663,7 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
 
     auto elapsed_col = std::chrono::duration_cast<std::chrono::nanoseconds>(end3 - begin3);
 
-    std::cout<<"Iteration: " << num_gather << " Gather color took seconds: " << elapsed_col.count() * 1e-9 << std::endl;
+//    std::cout<<"Iteration: " << num_gather << " Gather color took seconds: " << elapsed_col.count() * 1e-9 << std::endl;
 
     begin4 = std::chrono::high_resolution_clock::now();
 //    MPI_Gather(compositedDepth_copy, windowWidth  * windowHeight * numOutputSupsegs * 4 * 2 / commSize, MPI_BYTE,  gather_recv_depth, windowWidth * windowHeight * numOutputSupsegs * 4 * 2 / commSize, MPI_BYTE, root, MPI_COMM_WORLD);
@@ -674,7 +674,7 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
 
     auto elapsed_depth = std::chrono::duration_cast<std::chrono::nanoseconds>(end4 - begin4);
 
-    std::cout<<"Gather depth took seconds: " << elapsed_depth.count() * 1e-9 << std::endl;
+//    std::cout<<"Gather depth took seconds: " << elapsed_depth.count() * 1e-9 << std::endl;
     //The data is here now!
 
     double local_gather = (elapsed_col.count() + elapsed_depth.count()) * 1e-9;
@@ -702,7 +702,7 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
 
     num_gather++;
 
-    if(((num_gather % 30) == 0) && (myRank == 0)) {
+    if(((num_gather % 50) == 0) && (myRank == 0)) {
         int iterations = num_gather - warm_up_iterations;
         double average_gather = total_gather / (double)iterations;
         double average_overall = total_overall / (double) iterations;
