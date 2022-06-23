@@ -10,12 +10,12 @@
 #define VERBOSE false
 #define USE_VULKAN true
 #define SEPARATE_DEPTH true
-#define SAVE_FILES true
+#define SAVE_FILES false
 
 int count = 0;
 
-int windowWidth = 1280;
-int windowHeight = 720;
+int windowWidth = 1920;
+int windowHeight = 1080;
 int numSupersegments = 20;
 int numOutputSupsegs = 20;
 
@@ -39,10 +39,13 @@ auto end2 = std::chrono::high_resolution_clock::now();
 auto begin3 = std::chrono::high_resolution_clock::now();
 auto end3 = std::chrono::high_resolution_clock::now();
 
-long int total_alltoall = 0;
-long int total_gather = 0;
+double total_alltoall = 0;
+double total_gather = 0;
+double total_overall = 0;
 long int num_alltoall = 0;
 long int num_gather = 0;
+
+int warm_up_iterations = 20;
 
 void * subColor_copy;
 void * subDepth_copy;
@@ -552,8 +555,27 @@ void distributeVDIs(JNIEnv *e, jobject clazzObject, jobject subVDICol, jobject s
 
 #endif
 
-    total_alltoall += (elapsed_col.count() + elapsed_depth.count());
+    double local_alltoall = (elapsed_col.count() + elapsed_depth.count()) * 1e-9;
+
+    double global_sum;
+    MPI_Reduce(&local_alltoall, &global_sum, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+
+    double global_alltoall = global_sum / commSize;
+
+    if(num_alltoall > warm_up_iterations) {
+        total_alltoall += global_alltoall;
+    }
+
     num_alltoall++;
+
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    if(((num_alltoall % 30) == 0) && (rank == 0)) {
+        int iterations = num_alltoall - warm_up_iterations;
+        double average_alltoall = total_alltoall / (double) iterations;
+        std::cout<< "Number of alltoalls: " << num_alltoall << " average alltoall time so far: " << average_alltoall << std::endl;
+    }
 
     if(VERBOSE) printf("Finished both alltoalls\n");
 
@@ -647,18 +669,44 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
     MPI_Gather(ptrDepth, windowWidth  * windowHeight * numOutputSupsegs * 4 * 2 / commSize, MPI_BYTE,  gather_recv_depth, windowWidth * windowHeight * numOutputSupsegs * 4 * 2 / commSize, MPI_BYTE, root, MPI_COMM_WORLD);
     end4 = std::chrono::high_resolution_clock::now();
 
+    end = std::chrono::high_resolution_clock::now();
+
     auto elapsed_depth = std::chrono::duration_cast<std::chrono::nanoseconds>(end4 - begin4);
 
     std::cout<<"Gather depth took seconds: " << elapsed_depth.count() * 1e-9 << std::endl;
     //The data is here now!
 
-    total_gather += (elapsed_col.count() + elapsed_depth.count());
-    num_gather++;
+    double local_gather = (elapsed_col.count() + elapsed_depth.count()) * 1e-9;
 
-    end = std::chrono::high_resolution_clock::now();
+    double global_sum;
+
+    MPI_Reduce(&local_gather, &global_sum, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+
+    double global_gather = global_sum / commSize;
+
     auto elapsed_overall = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
 
-    printf("Time measured: %.3f seconds.\n", elapsed_overall.count() * 1e-9);
+//    printf("Time measured: %.3f seconds.\n", elapsed_overall.count() * 1e-9);
+    double local_overall = elapsed_overall.count() * 1e-9;
+
+    global_sum = 0;
+    MPI_Reduce(&local_overall, &global_sum, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+
+    double global_overall = global_sum / commSize;
+
+    if(num_gather > warm_up_iterations) {
+        total_gather += global_gather;
+        total_overall += global_overall;
+    }
+
+    num_gather++;
+
+    if(((num_gather % 30) == 0) && (myRank == 0)) {
+        int iterations = num_gather - warm_up_iterations;
+        double average_gather = total_gather / (double)iterations;
+        double average_overall = total_overall / (double) iterations;
+        std::cout<< "Number of gathers: " << num_gather << " average_gather gather time so far: " << average_gather << " average overall so far: " << average_overall <<std::endl;
+    }
 
     begin = std::chrono::high_resolution_clock::now();
 
