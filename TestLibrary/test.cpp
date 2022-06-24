@@ -27,6 +27,7 @@ auto end_copy1 = std::chrono::high_resolution_clock::now();
 auto begin_copy2 = std::chrono::high_resolution_clock::now();
 auto end_copy2 = std::chrono::high_resolution_clock::now();
 
+auto begin_whole = std::chrono::high_resolution_clock::now();
 auto begin = std::chrono::high_resolution_clock::now();
 auto end = std::chrono::high_resolution_clock::now();
 
@@ -42,6 +43,7 @@ auto end3 = std::chrono::high_resolution_clock::now();
 double total_alltoall = 0;
 double total_gather = 0;
 double total_overall = 0;
+double total_whole = 0;
 long int num_alltoall = 0;
 long int num_gather = 0;
 
@@ -265,6 +267,8 @@ void registerNatives(JVMData jvmData) {
     } else {
         if (VERBOSE) std::cout<<"Natives registered. The return value is: "<< ret <<std::endl;
     }
+
+    begin_whole = std::chrono::high_resolution_clock::now();
 }
 
 void stopRendering(JVMData jvmData) {
@@ -687,6 +691,8 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
 
     auto elapsed_overall = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
 
+    auto elapsed_whole = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin_whole);
+
 //    printf("Time measured: %.3f seconds.\n", elapsed_overall.count() * 1e-9);
     double local_overall = elapsed_overall.count() * 1e-9;
 
@@ -698,6 +704,7 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
     if(num_gather > warm_up_iterations) {
         total_gather += global_gather;
         total_overall += global_overall;
+        total_whole += elapsed_whole.count() * 1e-9;
     }
 
     num_gather++;
@@ -706,7 +713,8 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
         int iterations = num_gather - warm_up_iterations;
         double average_gather = total_gather / (double)iterations;
         double average_overall = total_overall / (double) iterations;
-        std::cout<< "Number of gathers: " << num_gather << " average_gather gather time so far: " << average_gather << " average overall so far: " << average_overall <<std::endl;
+        double average_whole = total_whole / (double) iterations;
+        std::cout<< "Number of gathers: " << num_gather << " average_gather gather time so far: " << average_gather << " average overall so far: " << average_overall << " average whole " << average_whole<<std::endl;
     }
 
     std::string dataset = datasetName;
@@ -746,4 +754,6 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
             count++;
         }
     }
+
+    begin_whole = std::chrono::high_resolution_clock::now();
 }
