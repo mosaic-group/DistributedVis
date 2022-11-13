@@ -1,5 +1,7 @@
 #include <iostream>
 #include "TestLiibrary.hpp"
+#include "MPINatives.hpp"
+#include "ManageRendering.hpp"
 #include <mpi.h>
 #include <thread>
 #include <fstream>
@@ -78,7 +80,9 @@ int main() {
         node_rank = 0;
     }
 
-    JVMData jvmData = setupJVM(isCluster);
+    JVMData jvmData = setupJVM(isCluster, "DistributedVolumes");
+
+    registerNatives(jvmData);
 
     setPointerAddresses(jvmData, MPI_COMM_WORLD);
     setVDIGeneration(jvmData, generateVDIs);
@@ -156,7 +160,7 @@ int main() {
             prev_slices += chunk_dimensions[2];
         }
 
-        setRendererConfigured(jvmData);
+        setSceneConfigured(jvmData);
 
         std::cout<<"Back after calling do Render" <<std::endl;
 
