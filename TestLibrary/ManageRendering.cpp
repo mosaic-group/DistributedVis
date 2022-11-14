@@ -47,7 +47,7 @@ JVMData setupJVM(bool isCluster, std::string className) {
         options[5].optionString = (char *)
                 "-Dorg.lwjgl.system.SharedLibraryExtractPath=/ssd/ws/argupta-vdi_generation/";
         options[6].optionString = (char *)
-                "-Dorg.lwjgl.librarypath=/scratch/ws/argupta-vdi_generation/";
+                "-Dorg.lwjgl.librarypath=/ssd/ws/argupta-vdi_generation/";
     } else {
         options[5].optionString = (char *)
                 "-Dorg.lwjgl.system.SharedLibraryExtractPath=/tmp/";
