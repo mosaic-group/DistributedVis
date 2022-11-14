@@ -45,9 +45,9 @@ JVMData setupJVM(bool isCluster, std::string className) {
 
     if(isCluster) {
         options[5].optionString = (char *)
-                "-Dorg.lwjgl.system.SharedLibraryExtractPath=/scratch/ws/1/argupta-distributed_vdis/";
+                "-Dorg.lwjgl.system.SharedLibraryExtractPath=/ssd/ws/argupta-vdi_generation/";
         options[6].optionString = (char *)
-                "-Dorg.lwjgl.librarypath=/scratch/ws/1/argupta-distributed_vdis/";
+                "-Dorg.lwjgl.librarypath=/scratch/ws/argupta-vdi_generation/";
     } else {
         options[5].optionString = (char *)
                 "-Dorg.lwjgl.system.SharedLibraryExtractPath=/tmp/";
