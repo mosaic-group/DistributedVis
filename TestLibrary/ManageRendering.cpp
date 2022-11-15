@@ -35,7 +35,7 @@ JVMData setupJVM(bool isCluster, std::string className) {
             "-Dorg.lwjgl.system.stackSize=1000";
 
     options[3].optionString = (char *)
-            "-Dscenery.Headless=false";
+            "-Dscenery.Headless=true";
 
     options[4].optionString = (char *)
             "-Dscenery.LogLevel=info";
