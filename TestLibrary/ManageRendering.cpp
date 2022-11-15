@@ -57,7 +57,7 @@ JVMData setupJVM(bool isCluster, std::string className) {
 
 
     vm_args.version = JNI_VERSION_1_6;
-    vm_args.nOptions = 4;
+    vm_args.nOptions = 7;
     vm_args.options = options;
     vm_args.ignoreUnrecognized = false;
 
