@@ -73,6 +73,12 @@ int main() {
     std::ifstream colorFile( filePath + "col", std::ios::in | std::ios::binary);
     std::ifstream depthFile( filePath + "depth", std::ios::in | std::ios::binary);
 
+    if(!colorFile.is_open() || !depthFile.is_open()) {
+        std::cerr<< "Could not open the file! " << std::endl;
+        std::exit(-1);
+    }
+
+
     char * colorBuffer = new char[colorSize];
     char * depthBuffer = new char[depthSize];
 
