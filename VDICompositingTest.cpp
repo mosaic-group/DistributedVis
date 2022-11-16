@@ -83,7 +83,9 @@ int main() {
     jobject jdepthBuffer = env->NewDirectByteBuffer(depthBuffer, depthSize);
 
 
-    env->CallVoidMethod(jvmData.obj, compositeMethod, jcolorBuffer, jdepthBuffer, rank, 4);
+    int iterations = 5;
+
+    env->CallVoidMethod(jvmData.obj, compositeMethod, jcolorBuffer, jdepthBuffer, rank, iterations);
     if(env->ExceptionOccurred()) {
         env->ExceptionDescribe();
         env->ExceptionClear();
