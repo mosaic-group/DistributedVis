@@ -44,6 +44,10 @@ int main() {
 
     setMPIParams(jvmData, rank, node_rank, num_processes);
 
+    jstring jdataset = jvmData.env->NewStringUTF(dataset.c_str());
+    jfieldID datasetField = jvmData.env->GetFieldID(jvmData.clazz, "dataset", "Ljava/lang/String;");
+    jvmData.env->SetObjectField(jvmData.obj, datasetField, jdataset);
+
     std::thread render(&doRender, jvmData);
 
     waitRendererConfigured(jvmData);
