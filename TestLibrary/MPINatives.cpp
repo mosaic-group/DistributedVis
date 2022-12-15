@@ -9,6 +9,7 @@ int count = 0;
 void setPointerAddresses(JVMData jvmData, MPI_Comm renderComm) {
     void * allToAllColorPointer = malloc(windowHeight * windowWidth * numSupersegments * 4 * 4);
     void * allToAllDepthPointer = malloc(windowWidth * windowHeight * numSupersegments * 4 * 2);
+    void * allToAllPrefixPointer = malloc(windowWidth * windowHeight * 4);
     void * gatherColorPointer = malloc(windowHeight * windowWidth * numOutputSupsegs * 4 * 4);
     void * gatherDepthPointer = malloc(windowHeight * windowWidth * numOutputSupsegs * 4 * 2);
 
@@ -27,6 +28,9 @@ void setPointerAddresses(JVMData jvmData, MPI_Comm renderComm) {
 
     jfieldID allD = jvmData.env->GetFieldID(jvmData.clazz, "allToAllDepthPointer", "J");
     jvmData.env->SetLongField(jvmData.obj, allD, reinterpret_cast<long>(allToAllDepthPointer));
+
+    jfieldID allP = jvmData.env->GetFieldID(jvmData.clazz, "allToAllPrefixPointer", "J");
+    jvmData.env->SetLongField(jvmData.obj, allP, reinterpret_cast<long>(allToAllPrefixPointer));
 
     jfieldID gatherC = jvmData.env->GetFieldID(jvmData.clazz, "gatherColorPointer", "J");
     jvmData.env->SetLongField(jvmData.obj, gatherC, reinterpret_cast<long>(gatherColorPointer));
@@ -56,13 +60,15 @@ void setMPIParams(JVMData jvmData , int rank, int node_rank, int commSize) {
 
 void registerNatives(JVMData jvmData) {
     JNINativeMethod methods[] { { (char *)"distributeVDIs", (char *)"(Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;IIJJJ)V", (void *)&distributeVDIs },
-                                { (char *)"distributeVDIsForBenchmark", (char *)"(Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;IIJJJII)V", (void *)&distributeVDIsForBenchmark },
-                                { (char *)"distributeVDIsWithVariableLength", (char *)"(Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;[I[IIJJJZII)V", (void *)&distributeVDIsWithVariableLength },
+                                { (char *)"distributeDenseVDIs", (char *)"(Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;[I[IIJJJJ)V", (void *)&distributeDenseVDIs},
+
+//                                { (char *)"distributeVDIsForBenchmark", (char *)"(Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;IIJJJII)V", (void *)&distributeVDIsForBenchmark },
+//                                { (char *)"distributeVDIsWithVariableLength", (char *)"(Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;[I[IIJJJZII)V", (void *)&distributeVDIsWithVariableLength },
                                 { (char *)"gatherCompositedVDIs", (char *)"(Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;IIIIJJJ)V", (void *)&gatherCompositedVDIs },
 
     };
 
-    int ret = jvmData.env->RegisterNatives(jvmData.clazz, methods, 4);
+    int ret = jvmData.env->RegisterNatives(jvmData.clazz, methods, 3);
     if(ret < 0) {
         if( jvmData.env->ExceptionOccurred() ) {
             jvmData.env->ExceptionDescribe();
@@ -227,6 +233,69 @@ int distributeVariable(int *limits, int *limitsRecv, void * sendBuf, void * recv
     MPI_Alltoallv(sendBuf, limits, displacementSend,MPI_BYTE, recvBuf,  limitsRecv, displacementRecv,MPI_BYTE, MPI_COMM_WORLD);
 
     return displacementRecvSum;
+}
+
+void distributeDenseVDIs(JNIEnv *e, jobject clazzObject, jobject colorVDI, jobject depthVDI, jobject prefixSums, jintArray colorLimits, jintArray depthLimits, jint commSize, jlong colPointer, jlong depthPointer, jlong prefixPointer, jlong mpiPointer) {
+    std::cout<<"In distribute dense VDIs function. Comm size is "<<commSize<<std::endl;
+
+    int *colLimits = e->GetIntArrayElements(colorLimits, NULL);
+    int *depLimits = e->GetIntArrayElements(depthLimits, NULL);
+
+    auto beginAllToAll = std::chrono::high_resolution_clock::now();
+
+    void *ptrCol = e->GetDirectBufferAddress(colorVDI);
+    void *ptrDepth = e->GetDirectBufferAddress(depthVDI);
+
+    void * recvBufCol;
+    recvBufCol = reinterpret_cast<void *>(colPointer);
+
+    void * recvBufDepth;
+    recvBufDepth = reinterpret_cast<void *>(depthPointer);
+
+    int * colorLimitsRecv = new int[commSize];
+    int * depthLimitsRecv = new int[commSize];
+
+    int displacementRecvSumColor = distributeVariable(colLimits, colorLimitsRecv, ptrCol, recvBufCol, commSize, "color");
+    int displacementRecvSumDepth = distributeVariable(depLimits, depthLimitsRecv, ptrDepth, recvBufDepth, commSize, "depth");
+
+    std::cout << "displacement recv sum color: " << displacementRecvSumColor << " depth: " << displacementRecvSumDepth << std::endl;
+
+    void * recvBufPrefix = reinterpret_cast<void *>(prefixPointer);
+    void *ptrPrefix = e->GetDirectBufferAddress(prefixSums);
+
+    MPI_Alltoall(ptrPrefix, windowWidth * windowHeight * 4 / commSize, MPI_BYTE, recvBufPrefix, windowWidth * windowHeight * 4 / commSize, MPI_BYTE, MPI_COMM_WORLD);
+
+    auto endAllToAll = std::chrono::high_resolution_clock::now();
+
+    printf("Finished both alltoalls for the dense VDIs\n");
+
+    jclass clazz = e->GetObjectClass(clazzObject);
+    jmethodID compositeMethod = e->GetMethodID(clazz, "uploadForCompositingDense", "(Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;[I[I)V");
+
+    jobject bbCol = e->NewDirectByteBuffer(recvBufCol, displacementRecvSumColor);
+
+    jobject bbDepth = e->NewDirectByteBuffer( recvBufDepth, displacementRecvSumDepth);
+
+    jobject bbPrefix = e->NewDirectByteBuffer( recvBufPrefix, windowWidth * windowHeight * 4);
+
+    jintArray javaColorLimits = e->NewIntArray(commSize);
+    e->SetIntArrayRegion(javaColorLimits, 0, commSize, colorLimitsRecv);
+
+    jintArray javaDepthLimits = e->NewIntArray(commSize);
+    e->SetIntArrayRegion(javaDepthLimits, 0, commSize, depthLimitsRecv);
+
+    if(e->ExceptionOccurred()) {
+        e->ExceptionDescribe();
+        e->ExceptionClear();
+    }
+
+    std::cout<<"Finished distributing the VDIs. Calling the dense Composite method now!"<<std::endl;
+
+    e->CallVoidMethod(clazzObject, compositeMethod, bbCol, bbDepth, bbPrefix, javaColorLimits, javaDepthLimits);
+    if(e->ExceptionOccurred()) {
+        e->ExceptionDescribe();
+        e->ExceptionClear();
+    }
 }
 
 // isBenchmark, rank & iteration don't need to be set -> results in no benchmark
