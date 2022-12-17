@@ -3,6 +3,7 @@
 #include "VDIParams.hpp"
 #include <fstream>
 #include <chrono>
+#include <cmath>
 
 int count = 0;
 
@@ -60,7 +61,7 @@ void setMPIParams(JVMData jvmData , int rank, int node_rank, int commSize) {
 
 void registerNatives(JVMData jvmData) {
     JNINativeMethod methods[] { { (char *)"distributeVDIs", (char *)"(Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;IIJJJ)V", (void *)&distributeVDIs },
-                                { (char *)"distributeDenseVDIs", (char *)"(Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;[I[IIJJJJ)V", (void *)&distributeDenseVDIs},
+                                { (char *)"distributeDenseVDIs", (char *)"(Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;[IIJJJJ)V", (void *)&distributeDenseVDIs},
 
 //                                { (char *)"distributeVDIsForBenchmark", (char *)"(Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;IIJJJII)V", (void *)&distributeVDIsForBenchmark },
 //                                { (char *)"distributeVDIsWithVariableLength", (char *)"(Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;[I[IIJJJZII)V", (void *)&distributeVDIsWithVariableLength },
@@ -200,11 +201,11 @@ void distributeVDIsForBenchmark(JNIEnv *e, jobject clazzObject, jobject subVDICo
     }
 }
 
-int distributeVariable(int *limits, int *limitsRecv, void * sendBuf, void * recvBuf, int commSize, const std::string& purpose = "") {
+int distributeVariable(int *counts, int *countsRecv, void * sendBuf, void * recvBuf, int commSize, const std::string& purpose = "") {
 
     std::cout<<"Performing distribution of " << purpose <<std::endl;
 
-    MPI_Alltoall(limits, 1, MPI_INT, limitsRecv, 1, MPI_INT, MPI_COMM_WORLD);
+    MPI_Alltoall(counts, 1, MPI_INT, countsRecv, 1, MPI_INT, MPI_COMM_WORLD);
 
     //set up the AllToAllv
     int displacementSendSum = 0;
@@ -215,31 +216,30 @@ int distributeVariable(int *limits, int *limitsRecv, void * sendBuf, void * recv
 
     for( int i = 0 ; i < commSize ; i ++){
         displacementSend[i] = displacementSendSum;
-        displacementSendSum += limits[i];
+        displacementSendSum += counts[i];
 
         displacementRecv[i] = displacementRecvSum;
-        displacementRecvSum += limitsRecv[i];
+        displacementRecvSum += countsRecv[i];
     }
 
     if(recvBuf == nullptr) {
         std::cout<<"This is an error! Receive buffer needs to be preallocated with sufficient size"<<std::endl;
         int sum = 0;
         for( int i = 0 ; i < commSize ; i++) {
-            sum += limitsRecv[i];
+            sum += countsRecv[i];
         }
         recvBuf = malloc(sum);
     }
 
-    MPI_Alltoallv(sendBuf, limits, displacementSend,MPI_BYTE, recvBuf,  limitsRecv, displacementRecv,MPI_BYTE, MPI_COMM_WORLD);
+    MPI_Alltoallv(sendBuf, counts, displacementSend, MPI_BYTE, recvBuf, countsRecv, displacementRecv, MPI_BYTE, MPI_COMM_WORLD);
 
     return displacementRecvSum;
 }
 
-void distributeDenseVDIs(JNIEnv *e, jobject clazzObject, jobject colorVDI, jobject depthVDI, jobject prefixSums, jintArray colorLimits, jintArray depthLimits, jint commSize, jlong colPointer, jlong depthPointer, jlong prefixPointer, jlong mpiPointer) {
+void distributeDenseVDIs(JNIEnv *e, jobject clazzObject, jobject colorVDI, jobject depthVDI, jobject prefixSums, jintArray supersegmentCounts, jint commSize, jlong colPointer, jlong depthPointer, jlong prefixPointer, jlong mpiPointer) {
     std::cout<<"In distribute dense VDIs function. Comm size is "<<commSize<<std::endl;
 
-    int *colLimits = e->GetIntArrayElements(colorLimits, NULL);
-    int *depLimits = e->GetIntArrayElements(depthLimits, NULL);
+    int *supsegCounts = e->GetIntArrayElements(supersegmentCounts, NULL);
 
     auto beginAllToAll = std::chrono::high_resolution_clock::now();
 
@@ -252,13 +252,21 @@ void distributeDenseVDIs(JNIEnv *e, jobject clazzObject, jobject colorVDI, jobje
     void * recvBufDepth;
     recvBufDepth = reinterpret_cast<void *>(depthPointer);
 
-    int * colorLimitsRecv = new int[commSize];
-    int * depthLimitsRecv = new int[commSize];
+    int * colorCounts = new int[commSize];
+    int * depthCounts = new int[commSize];
 
-    int displacementRecvSumColor = distributeVariable(colLimits, colorLimitsRecv, ptrCol, recvBufCol, commSize, "color");
-    int displacementRecvSumDepth = distributeVariable(depLimits, depthLimitsRecv, ptrDepth, recvBufDepth, commSize, "depth");
+    for(int i = 0; i < commSize; i++) {
+        colorCounts[i] = supsegCounts[i] * 4 * 4;
+        depthCounts[i] = supsegCounts[i] * 4 * 2;
+    }
 
-    std::cout << "displacement recv sum color: " << displacementRecvSumColor << " depth: " << displacementRecvSumDepth << std::endl;
+    int * colorCountsRecv = new int[commSize];
+    int * depthCountsRecv = new int[commSize];
+
+    int totalRecvdColor = distributeVariable(colorCounts, colorCountsRecv, ptrCol, recvBufCol, commSize, "color");
+    int totalRecvdDepth = distributeVariable(depthCounts, depthCountsRecv, ptrDepth, recvBufDepth, commSize, "depth");
+
+    std::cout << "total bytes recvd: color: " << totalRecvdColor << " depth: " << totalRecvdDepth << std::endl;
 
     void * recvBufPrefix = reinterpret_cast<void *>(prefixPointer);
     void *ptrPrefix = e->GetDirectBufferAddress(prefixSums);
@@ -272,17 +280,23 @@ void distributeDenseVDIs(JNIEnv *e, jobject clazzObject, jobject colorVDI, jobje
     jclass clazz = e->GetObjectClass(clazzObject);
     jmethodID compositeMethod = e->GetMethodID(clazz, "uploadForCompositingDense", "(Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;[I[I)V");
 
-    jobject bbCol = e->NewDirectByteBuffer(recvBufCol, displacementRecvSumColor);
+    int supsegsRecvd = totalRecvdColor / (4 * 4);
 
-    jobject bbDepth = e->NewDirectByteBuffer( recvBufDepth, displacementRecvSumDepth);
+    long supsegsInBuffer = 512 * 512 * (long)ceil((double)supsegsRecvd / (512.0*512.0));
+
+    std::cout << "The number of supsegs recvd: " << supsegsRecvd << " and stored: " << supsegsInBuffer << std::endl;
+
+    jobject bbCol = e->NewDirectByteBuffer(recvBufCol, supsegsInBuffer * 4 * 4);
+
+    jobject bbDepth = e->NewDirectByteBuffer(recvBufDepth, supsegsInBuffer * 4 * 2);
 
     jobject bbPrefix = e->NewDirectByteBuffer( recvBufPrefix, windowWidth * windowHeight * 4);
 
-    jintArray javaColorLimits = e->NewIntArray(commSize);
-    e->SetIntArrayRegion(javaColorLimits, 0, commSize, colorLimitsRecv);
+    jintArray javaColorCounts = e->NewIntArray(commSize);
+    e->SetIntArrayRegion(javaColorCounts, 0, commSize, colorCountsRecv);
 
-    jintArray javaDepthLimits = e->NewIntArray(commSize);
-    e->SetIntArrayRegion(javaDepthLimits, 0, commSize, depthLimitsRecv);
+    jintArray javaDepthCounts = e->NewIntArray(commSize);
+    e->SetIntArrayRegion(javaDepthCounts, 0, commSize, depthCountsRecv);
 
     if(e->ExceptionOccurred()) {
         e->ExceptionDescribe();
@@ -291,7 +305,7 @@ void distributeDenseVDIs(JNIEnv *e, jobject clazzObject, jobject colorVDI, jobje
 
     std::cout<<"Finished distributing the VDIs. Calling the dense Composite method now!"<<std::endl;
 
-    e->CallVoidMethod(clazzObject, compositeMethod, bbCol, bbDepth, bbPrefix, javaColorLimits, javaDepthLimits);
+    e->CallVoidMethod(clazzObject, compositeMethod, bbCol, bbDepth, bbPrefix, javaColorCounts, javaDepthCounts);
     if(e->ExceptionOccurred()) {
         e->ExceptionDescribe();
         e->ExceptionClear();
