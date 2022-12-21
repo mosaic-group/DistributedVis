@@ -4,6 +4,7 @@
 #include <fstream>
 #include <chrono>
 #include <cmath>
+#include <crt/math_functions.h>
 
 int count = 0;
 
@@ -214,11 +215,20 @@ int distributeVariable(int *counts, int *countsRecv, void * sendBuf, void * recv
     int displacementRecvSum = 0;
     int displacementRecv[commSize];
 
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
     for( int i = 0 ; i < commSize ; i ++){
         displacementSend[i] = displacementSendSum;
+        if(rank == 2) {
+            std::cout<< "PE " << i << " will receive elements starting at location " << displacementSend[i] << " in the buffer " <<std::endl;
+        }
         displacementSendSum += counts[i];
 
         displacementRecv[i] = displacementRecvSum;
+        if(rank == 2) {
+            std::cout<< "Contents from PE " << i << " will be written at location " << displacementRecv[i] << " in the buffer " <<std::endl;
+        }
         displacementRecvSum += countsRecv[i];
     }
 
@@ -282,7 +292,7 @@ void distributeDenseVDIs(JNIEnv *e, jobject clazzObject, jobject colorVDI, jobje
 
     int supsegsRecvd = totalRecvdColor / (4 * 4);
 
-    long supsegsInBuffer = 512 * 512 * (long)ceil((double)supsegsRecvd / (512.0*512.0));
+    long supsegsInBuffer = min(512 * 512 * (long)ceil((double)supsegsRecvd / (512.0*512.0)), 2L);
 
     std::cout << "The number of supsegs recvd: " << supsegsRecvd << " and stored: " << supsegsInBuffer << std::endl;
 
