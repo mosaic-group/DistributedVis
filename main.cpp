@@ -2,6 +2,7 @@
 #include "TestLiibrary.hpp"
 #include "MPINatives.hpp"
 #include "ManageRendering.hpp"
+#include "VDIParams.hpp"
 #include <mpi.h>
 #include <thread>
 #include <fstream>
@@ -48,8 +49,8 @@ int * getVolumeDims(const std::string& path) {
 int main() {
     std::cout << "Hello, World!" << std::endl;
 
-    std::string dataset = "Kingsnake";
-    const bool is16bit = false;
+    std::string dataset = datasetName;
+    const bool is16bit = dataset16bit;
     bool generateVDIs = true;
     bool isCluster = false;
 

@@ -13,5 +13,6 @@ const int colorSize = windowWidth * windowHeight * numSupersegments * 4 * 4;
 const int depthSize = windowWidth * windowHeight * numSupersegments * 4 * 2;
 
 const std::string datasetName = "Kingsnake";
+const bool dataset16bit = false;
 
 #endif //DISTRIBUTEDVIS_VDIPARAMS_HPP
