@@ -206,7 +206,9 @@ void distributeVDIsForBenchmark(JNIEnv *e, jobject clazzObject, jobject subVDICo
 
 int distributeVariable(int *counts, int *countsRecv, void * sendBuf, void * recvBuf, int commSize, const std::string& purpose = "") {
 
+#if VERBOSE
     std::cout<<"Performing distribution of " << purpose <<std::endl;
+#endif
 
     MPI_Alltoall(counts, 1, MPI_INT, countsRecv, 1, MPI_INT, MPI_COMM_WORLD);
 
@@ -243,7 +245,9 @@ int distributeVariable(int *counts, int *countsRecv, void * sendBuf, void * recv
 }
 
 void distributeDenseVDIs(JNIEnv *e, jobject clazzObject, jobject colorVDI, jobject depthVDI, jobject prefixSums, jintArray supersegmentCounts, jint commSize, jlong colPointer, jlong depthPointer, jlong prefixPointer, jlong mpiPointer) {
+#if VERBOSE
     std::cout<<"In distribute dense VDIs function. Comm size is "<<commSize<<std::endl;
+#endif
 
     int *supsegCounts = e->GetIntArrayElements(supersegmentCounts, NULL);
 
@@ -272,7 +276,9 @@ void distributeDenseVDIs(JNIEnv *e, jobject clazzObject, jobject colorVDI, jobje
     int totalRecvdColor = distributeVariable(colorCounts, colorCountsRecv, ptrCol, recvBufCol, commSize, "color");
     int totalRecvdDepth = distributeVariable(depthCounts, depthCountsRecv, ptrDepth, recvBufDepth, commSize, "depth");
 
+#if VERBOSE
     std::cout << "total bytes recvd: color: " << totalRecvdColor << " depth: " << totalRecvdDepth << std::endl;
+#endif
 
     void * recvBufPrefix = reinterpret_cast<void *>(prefixPointer);
     void *ptrPrefix = e->GetDirectBufferAddress(prefixSums);
@@ -281,7 +287,9 @@ void distributeDenseVDIs(JNIEnv *e, jobject clazzObject, jobject colorVDI, jobje
 
     auto endAllToAll = std::chrono::high_resolution_clock::now();
 
+#if VERBOSE
     printf("Finished both alltoalls for the dense VDIs\n");
+#endif
 
     jclass clazz = e->GetObjectClass(clazzObject);
     jmethodID compositeMethod = e->GetMethodID(clazz, "uploadForCompositingDense", "(Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;[I[I)V");
@@ -311,7 +319,9 @@ void distributeDenseVDIs(JNIEnv *e, jobject clazzObject, jobject colorVDI, jobje
         e->ExceptionClear();
     }
 
+#if VERBOSE
     std::cout<<"Finished distributing the VDIs. Calling the dense Composite method now!"<<std::endl;
+#endif
 
     e->CallVoidMethod(clazzObject, compositeMethod, bbCol, bbDepth, bbPrefix, javaColorCounts, javaDepthCounts);
     if(e->ExceptionOccurred()) {
@@ -382,7 +392,9 @@ void distributeVDIsWithVariableLength(JNIEnv *e, jobject clazzObject, jobject co
 
 void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIColor, jobject compositedVDIDepth, jint compositedVDILen, jint root, jint myRank, jint commSize, jlong colPointer, jlong depthPointer, jlong mpiPointer) {
 
+#if VERBOSE
     std::cout<<"In Gather function " <<std::endl;
+#endif
 
     void *ptrCol = e->GetDirectBufferAddress(compositedVDIColor);
     void *ptrDepth = e->GetDirectBufferAddress(compositedVDIDepth);
