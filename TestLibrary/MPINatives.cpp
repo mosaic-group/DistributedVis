@@ -6,6 +6,8 @@
 #include <cmath>
 #include <algorithm>
 
+#define VERBOSE false
+
 int count = 0;
 
 void setPointerAddresses(JVMData jvmData, MPI_Comm renderComm) {
@@ -220,15 +222,9 @@ int distributeVariable(int *counts, int *countsRecv, void * sendBuf, void * recv
 
     for( int i = 0 ; i < commSize ; i ++){
         displacementSend[i] = displacementSendSum;
-        if(rank == 2) {
-            std::cout<< "PE " << i << " will receive elements starting at location " << displacementSend[i] << " in the buffer " <<std::endl;
-        }
         displacementSendSum += counts[i];
 
         displacementRecv[i] = displacementRecvSum;
-        if(rank == 2) {
-            std::cout<< "Contents from PE " << i << " will be written at location " << displacementRecv[i] << " in the buffer " <<std::endl;
-        }
         displacementRecvSum += countsRecv[i];
     }
 
@@ -294,7 +290,9 @@ void distributeDenseVDIs(JNIEnv *e, jobject clazzObject, jobject colorVDI, jobje
 
     long supsegsInBuffer = 512 * 512 * (std::max((long)ceil((double)supsegsRecvd / (512.0*512.0)), 2L));
 
+#if VERBOSE
     std::cout << "The number of supsegs recvd: " << supsegsRecvd << " and stored: " << supsegsInBuffer << std::endl;
+#endif
 
     jobject bbCol = e->NewDirectByteBuffer(recvBufCol, supsegsInBuffer * 4 * 4);
 
@@ -418,7 +416,7 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
     if(myRank == 0) {
 //        //send or store the VDI
 
-        if(true) {
+        if(!benchmarking) {
 
             std::cout<<"Writing the final gathered VDI now"<<std::endl;
 

@@ -5,7 +5,6 @@
 #include <string.h>
 #include "VDIParams.hpp"
 
-#define VERBOSE false
 #define USE_VULKAN true
 
 enum vis_type
@@ -16,6 +15,11 @@ enum vis_type
 
 vis_type getVisType() {
     return vis_type::grid;
+}
+
+void setBenchmarking(JVMData jvmData) {
+    jfieldID vdiField = jvmData.env->GetFieldID(jvmData.clazz, "benchmarking", "Z");
+    jvmData.env->SetBooleanField(jvmData.obj, vdiField, benchmarking);
 }
 
 void setDatasetParams(JVMData jvmData, std::string dataset, float pixelToWorld, int dimensions[]) {
@@ -42,6 +46,8 @@ void setDatasetParams(JVMData jvmData, std::string dataset, float pixelToWorld, 
     } else {
         std::cout << "setVolumeDims function successfully found!";
     }
+
+    setBenchmarking(jvmData);
 
     jvmData.env->CallVoidMethod(jvmData.obj, setVolumeDimsMethod, jdims);
     if(jvmData.env->ExceptionOccurred()) {

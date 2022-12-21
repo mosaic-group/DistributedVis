@@ -14,5 +14,6 @@ const int depthSize = windowWidth * windowHeight * numSupersegments * 4 * 2;
 
 const std::string datasetName = "Kingsnake";
 const bool dataset16bit = false;
+const bool benchmarking = true;
 
 #endif //DISTRIBUTEDVIS_VDIPARAMS_HPP
