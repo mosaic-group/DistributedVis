@@ -292,7 +292,7 @@ void distributeDenseVDIs(JNIEnv *e, jobject clazzObject, jobject colorVDI, jobje
 
     int supsegsRecvd = totalRecvdColor / (4 * 4);
 
-    long supsegsInBuffer = 512 * 512 * (std::min((long)ceil((double)supsegsRecvd / (512.0*512.0)), 2L));
+    long supsegsInBuffer = 512 * 512 * (std::max((long)ceil((double)supsegsRecvd / (512.0*512.0)), 2L));
 
     std::cout << "The number of supsegs recvd: " << supsegsRecvd << " and stored: " << supsegsInBuffer << std::endl;
 
