@@ -345,12 +345,6 @@ void distributeDenseVDIs(JNIEnv *e, jobject clazzObject, jobject colorVDI, jobje
                       << average_alltoall << std::endl;
         }
 
-        if (((num_alltoall % 50) == 0) && (rank == 0)) {
-            int iterations = num_alltoall - warm_up_iterations;
-            double average_alltoall = total_alltoall / (double) iterations;
-            std::cout << "Number of alltoalls: " << num_alltoall << " average alltoall time so far: "
-                      << average_alltoall << std::endl;
-        }
     }
 #endif
 
