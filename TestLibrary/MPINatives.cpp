@@ -4,7 +4,7 @@
 #include <fstream>
 #include <chrono>
 #include <cmath>
-#include <crt/math_functions.h>
+#include <algorithm>
 
 int count = 0;
 
@@ -292,7 +292,7 @@ void distributeDenseVDIs(JNIEnv *e, jobject clazzObject, jobject colorVDI, jobje
 
     int supsegsRecvd = totalRecvdColor / (4 * 4);
 
-    long supsegsInBuffer = min(512 * 512 * (long)ceil((double)supsegsRecvd / (512.0*512.0)), 2L);
+    long supsegsInBuffer = std::min(512 * 512 * (long)ceil((double)supsegsRecvd / (512.0*512.0)), 2L);
 
     std::cout << "The number of supsegs recvd: " << supsegsRecvd << " and stored: " << supsegsInBuffer << std::endl;
 
