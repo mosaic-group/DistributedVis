@@ -138,16 +138,17 @@ void distributeVDIs(JNIEnv *e, jobject clazzObject, jobject subVDICol, jobject s
     begin_whole_compositing = std::chrono::high_resolution_clock::now();
 #endif
 
+#if VERBOSE
     std::cout<<"Starting all to all"<<std::endl;
-
+#endif
     MPI_Alltoall(ptrCol, windowHeight * windowWidth * numSupersegments * 4 * 4 / commSize, MPI_BYTE, recvBufCol, windowHeight * windowWidth * numSupersegments * 4 * 4 / commSize, MPI_BYTE, MPI_COMM_WORLD);
-
+#if VERBOSE
     std::cout<<"Finished color all to all"<<std::endl;
-
+#endif
     MPI_Alltoall(ptrDepth, windowHeight * windowWidth * numSupersegments * 4 * 2 / commSize, MPI_BYTE, recvBufDepth, windowHeight * windowWidth * numSupersegments * 4 * 2 / commSize, MPI_BYTE, MPI_COMM_WORLD);
-
+#if VERBOSE
     printf("Finished both alltoalls\n");
-
+#endif
 #if PROFILING
     {
         end = std::chrono::high_resolution_clock::now();
@@ -200,9 +201,9 @@ void distributeVDIs(JNIEnv *e, jobject clazzObject, jobject subVDICol, jobject s
         e->ExceptionDescribe();
         e->ExceptionClear();
     }
-
+#if VERBOSE
     std::cout<<"Finished distributing the VDIs. Calling the Composite method now!"<<std::endl;
-
+#endif
     e->CallVoidMethod(clazzObject, compositeMethod, bbCol, bbDepth);
     if(e->ExceptionOccurred()) {
         e->ExceptionDescribe();
