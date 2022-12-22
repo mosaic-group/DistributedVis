@@ -171,7 +171,8 @@ void distributeVDIs(JNIEnv *e, jobject clazzObject, jobject subVDICol, jobject s
         int rank;
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-        std::cout << "Distribute time at process " << rank << " was " << local_alltoall << std::endl;
+        std::cout << "Distribute time (full-res) at process " << rank << " was " << local_alltoall << " while global was " <<
+        global_alltoall << std::endl;
 
         if (((num_alltoall % 50) == 0) && (rank == 0)) {
             int iterations = num_alltoall - warm_up_iterations;
@@ -374,7 +375,8 @@ void distributeDenseVDIs(JNIEnv *e, jobject clazzObject, jobject colorVDI, jobje
         int rank;
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-        std::cout << "Distribute time at process " << rank << " was " << local_alltoall << std::endl;
+        std::cout << "Distribute time (dense) at process " << rank << " was " << local_alltoall << " while global was " <<
+                  global_alltoall << std::endl;
 
         if (((num_alltoall % 50) == 0) && (rank == 0)) {
             int iterations = num_alltoall - warm_up_iterations;
