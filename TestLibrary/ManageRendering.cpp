@@ -7,7 +7,7 @@ JVMData setupJVM(bool isCluster, std::string className) {
     DIR *dir;
     struct dirent *ent;
     std::string classPath = "-Djava.class.path=";
-    std::string directory = "/beegfs/ws/1/anbr392b-test-workspace/argupta-vdi_generation/scenery-insitu/build/libs/";
+    std::string directory = "/beegfs/ws/1/anbr392b-test-workspace/argupta-vdi_generation/insitu_build/";
 
     if ((dir = opendir (directory.c_str())) != nullptr) {
         while ((ent = readdir (dir)) != nullptr) {
