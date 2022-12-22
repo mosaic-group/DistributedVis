@@ -16,6 +16,6 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
 void setPointerAddresses(JVMData jvmData, MPI_Comm renderComm);
 void setMPIParams(JVMData jvmData , int rank, int node_rank, int commSize);
 void registerNatives(JVMData jvmData);
-void setProgramSettings(JVMData jvmData, std::string dataset, bool withCompression, bool benchmarkValues);
+void setProgramSettings(JVMData jvmData, bool withCompression, bool benchmarkValues);
 
 #endif //DISTRIBUTEDVIS_MPINATIVES_HPP

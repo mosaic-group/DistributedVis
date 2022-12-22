@@ -456,12 +456,13 @@ void distributeDenseVDIs(JNIEnv *e, jobject clazzObject, jobject colorVDI, jobje
 
 // isBenchmark, rank & iteration don't need to be set -> results in no benchmark
 void distributeVDIsWithVariableLength(JNIEnv *e, jobject clazzObject, jobject colorVDI, jobject depthVDI, jintArray colorLimits, jintArray depthLimits , jint commSize, jlong colPointer, jlong depthPointer, jlong mpiPointer, jboolean isBenchmark, jint rank , jint iteration ) {
-    std::cout<<"In distribute Compressed VDIs (Benchmark) function. Comm size is "<<commSize<<std::endl;
-
+#if VERBOSE
+    std::cout<<"In distribute distribute VDIs with variable length fucntion. Comm size is "<<commSize<<std::endl;
+#endif
     int *colLimits = e->GetIntArrayElements(colorLimits, NULL);
     int *depLimits = e->GetIntArrayElements(depthLimits, NULL);
 
-    auto beginAllToAll = std::chrono::high_resolution_clock::now();
+    //auto beginAllToAll = std::chrono::high_resolution_clock::now();
 
     void *ptrCol = e->GetDirectBufferAddress(colorVDI);
     void *ptrDepth = e->GetDirectBufferAddress(depthVDI);
@@ -475,24 +476,69 @@ void distributeVDIsWithVariableLength(JNIEnv *e, jobject clazzObject, jobject co
     int * colorLimitsRecv = new int[commSize];
     int * depthLimitsRecv = new int[commSize];
 
-    int displacementRecvSumColor = distributeVariable(colLimits, colorLimitsRecv, ptrCol, recvBufCol, commSize, "color");
-    int displacementRecvSumDepth = distributeVariable(depLimits, depthLimitsRecv, ptrDepth, recvBufDepth, commSize, "depth");
+#if PROFILING
+    MPI_Barrier(MPI_COMM_WORLD);
+    begin = std::chrono::high_resolution_clock::now();
+#endif
 
-    auto endAllToAll = std::chrono::high_resolution_clock::now();
+    int totalRecvdColor = distributeVariable(colLimits, colorLimitsRecv, ptrCol, recvBufCol, commSize, "color");
+    int totalRecvdDepth = distributeVariable(depLimits, depthLimitsRecv, ptrDepth, recvBufDepth, commSize, "depth");
 
-    if(isBenchmark){
-        auto elapsed_AllToAll = std::chrono::duration_cast<std::chrono::nanoseconds>(endAllToAll - beginAllToAll);
-        std::cout << "AllToAll Values took in seconds: #ALLVAL:"<< rank << ":" << iteration << ":" << elapsed_AllToAll.count() * 1e-9 << "#"<< std::endl;
+#if VERBOSE
+    std::cout << "total bytes recvd: color: " << totalRecvdColor << " depth: " << totalRecvdDepth << std::endl;
+#endif
+//    auto endAllToAll = std::chrono::high_resolution_clock::now();
+
+//    if(isBenchmark){
+//        auto elapsed_AllToAll = std::chrono::duration_cast<std::chrono::nanoseconds>(endAllToAll - beginAllToAll);
+//        std::cout << "AllToAll Values took in seconds: #ALLVAL:"<< rank << ":" << iteration << ":" << elapsed_AllToAll.count() * 1e-9 << "#"<< std::endl;
+//    }
+
+#if PROFILING
+    {
+        end = std::chrono::high_resolution_clock::now();
+
+        auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
+
+        double local_alltoall = (elapsed.count()) * 1e-9;
+
+        double global_sum;
+
+        MPI_Reduce(&local_alltoall, &global_sum, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+
+        double global_alltoall = global_sum / commSize;
+
+        if (num_alltoall > warm_up_iterations) {
+            total_alltoall += global_alltoall;
+        }
+
+        num_alltoall++;
+
+        int rank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+        std::cout << "Distribute time at process " << rank << " was " << local_alltoall << std::endl;
+
+        if (((num_alltoall % 50) == 0) && (rank == 0)) {
+            int iterations = num_alltoall - warm_up_iterations;
+            double average_alltoall = total_alltoall / (double) iterations;
+            std::cout << "Number of alltoalls: " << num_alltoall << " average alltoall time so far: "
+                      << average_alltoall << std::endl;
+        }
+
     }
+#endif
 
+#if VERBOSE
     printf("Finished both alltoalls with Compression\n");
+#endif
 
     jclass clazz = e->GetObjectClass(clazzObject);
     jmethodID compositeMethod = e->GetMethodID(clazz, "handleReceivedBuffersAndUploadForCompositing", "(Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;[I[I)V");
 
-    jobject bbCol = e->NewDirectByteBuffer(recvBufCol, displacementRecvSumColor);
+    jobject bbCol = e->NewDirectByteBuffer(recvBufCol, totalRecvdColor);
 
-    jobject bbDepth = e->NewDirectByteBuffer( recvBufDepth, displacementRecvSumDepth);
+    jobject bbDepth = e->NewDirectByteBuffer( recvBufDepth, totalRecvdDepth);
 
     jintArray javaColorLimits = e->NewIntArray(commSize);
     e->SetIntArrayRegion(javaColorLimits, 0, commSize, colorLimitsRecv);
@@ -504,8 +550,9 @@ void distributeVDIsWithVariableLength(JNIEnv *e, jobject clazzObject, jobject co
         e->ExceptionDescribe();
         e->ExceptionClear();
     }
-
+#if VERBOSE
     std::cout<<"Finished distributing the VDIs. Calling the decompression Composite method now!"<<std::endl;
+#endif
 
     e->CallVoidMethod(clazzObject, compositeMethod, bbCol, bbDepth, javaColorLimits, javaDepthLimits);
     if(e->ExceptionOccurred()) {
@@ -620,7 +667,7 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
 
     dataset += "_" + std::to_string(commSize) + "_" + std::to_string(myRank);
 
-    std::string basePath = "/home/aryaman/TestingData/";
+    std::string basePath = "/beegfs/ws/1/anbr392b-test-workspace/argupta-vdi_generation/finals/";
 
     if(myRank == 0) {
 //        //send or store the VDI
@@ -655,18 +702,14 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
     begin_whole_vdi = std::chrono::high_resolution_clock::now();
 }
 
-void setProgramSettings(JVMData jvmData, std::string dataset, bool withCompression, bool benchmarkValues){
-
-    jstring jdataset = jvmData.env->NewStringUTF(dataset.c_str());
-    jfieldID datasetField = jvmData.env->GetFieldID(jvmData.clazz, "dataset", "Ljava/lang/String;");
-    jvmData.env->SetObjectField(jvmData.obj, datasetField, jdataset);
+void setProgramSettings(JVMData jvmData, bool withCompression, bool benchmarkValues){
 
     jboolean jWithCompression = withCompression;
-    jfieldID withCompressionField = jvmData.env->GetFieldID(jvmData.clazz, "isCompressed", "Z");
+    jfieldID withCompressionField = jvmData.env->GetFieldID(jvmData.clazz, "withCompression", "Z");
     jvmData.env->SetBooleanField(jvmData.obj, withCompressionField, jWithCompression);
 
     jboolean jBenchmarkValues = benchmarkValues;
-    jfieldID benchmarkValuesField = jvmData.env->GetFieldID(jvmData.clazz, "isBenchmark", "Z");
+    jfieldID benchmarkValuesField = jvmData.env->GetFieldID(jvmData.clazz, "benchmarkCompression", "Z");
     jvmData.env->SetBooleanField(jvmData.obj, benchmarkValuesField, jBenchmarkValues);
 
 }
