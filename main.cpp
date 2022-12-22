@@ -165,7 +165,7 @@ int main() {
 
         std::cout<<"Back after calling do Render" <<std::endl;
 
-        sleep(300);
+        sleep(1000);
         std::cout<<"Calling stopRendering!" <<std::endl;
         stopRendering(jvmData);
 
