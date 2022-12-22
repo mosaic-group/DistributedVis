@@ -8,7 +8,7 @@
 
 #define VERBOSE false
 
-#define PROFILING true
+#define PROFILING false
 
 int count = 0;
 
