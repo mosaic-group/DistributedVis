@@ -673,7 +673,7 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
     if(myRank == 0) {
 //        //send or store the VDI
 
-        if(benchmarking) {
+        if(!benchmarking) {
 
             std::cout<<"Writing the final gathered VDI now"<<std::endl;
 
