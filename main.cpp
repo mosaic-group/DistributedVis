@@ -51,7 +51,7 @@ int main() {
 
     std::string dataset = datasetName;
     const bool is16bit = dataset16bit;
-    bool generateVDIs = true;
+    bool generateVDIs = false;
     bool isCluster = false;
 
     int provided;

@@ -17,5 +17,6 @@ void setPointerAddresses(JVMData jvmData, MPI_Comm renderComm);
 void setMPIParams(JVMData jvmData , int rank, int node_rank, int commSize);
 void registerNatives(JVMData jvmData);
 void setProgramSettings(JVMData jvmData, std::string dataset, bool withCompression, bool benchmarkValues);
+double reduce(JNIEnv *e, jobject clazzObject, jdouble value);
 
 #endif //DISTRIBUTEDVIS_MPINATIVES_HPP

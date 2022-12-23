@@ -89,10 +89,11 @@ void registerNatives(JVMData jvmData) {
 //                                { (char *)"distributeVDIsForBenchmark", (char *)"(Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;IIJJJII)V", (void *)&distributeVDIsForBenchmark },
 //                                { (char *)"distributeVDIsWithVariableLength", (char *)"(Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;[I[IIJJJZII)V", (void *)&distributeVDIsWithVariableLength },
                                 { (char *)"gatherCompositedVDIs", (char *)"(Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;IIIIJJIJ)V", (void *)&gatherCompositedVDIs },
+                                {(char *)"reduceAcrossPEs", (char *)"(D)D", (void *)&reduce},
 
     };
 
-    int ret = jvmData.env->RegisterNatives(jvmData.clazz, methods, 3);
+    int ret = jvmData.env->RegisterNatives(jvmData.clazz, methods, 4);
     if(ret < 0) {
         if( jvmData.env->ExceptionOccurred() ) {
             jvmData.env->ExceptionDescribe();
@@ -609,7 +610,9 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
 
     double local_overall = elapsed_overall.count() * 1e-9;
 
+#if VERBOSE
     std::cout << "Whole VDI generation time at process " << myRank << " was " << local_overall << std::endl;
+#endif
 
     global_sum = 0;
     MPI_Reduce(&local_overall, &global_sum, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
@@ -671,6 +674,24 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
         }
     }
     begin_whole_vdi = std::chrono::high_resolution_clock::now();
+}
+
+double reduce(JNIEnv *e, jobject clazzObject, jdouble value) {
+
+    double local_val = value;
+    double global_min;
+
+    int rank;
+
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    MPI_Reduce(&local_val, &global_min, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
+
+    if(rank == 0) {
+        return global_min;
+    } else {
+        return 0.0;
+    }
 }
 
 void setProgramSettings(JVMData jvmData, std::string dataset, bool withCompression, bool benchmarkValues){
