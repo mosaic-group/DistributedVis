@@ -28,7 +28,7 @@ long int num_alltoall = 0;
 long int num_gather = 0;
 long int num_whole_vdi = 0;
 
-int warm_up_iterations = 20;
+int warm_up_iterations = 10;
 
 void setPointerAddresses(JVMData jvmData, MPI_Comm renderComm) {
     void * allToAllColorPointer = malloc(windowHeight * windowWidth * numSupersegments * 4 * 4);
