@@ -381,11 +381,11 @@ void distributeDenseVDIs(JNIEnv *e, jobject clazzObject, jobject colorVDI, jobje
 
 #if VERBOSE
         std::cout << "Distribute time (dense) at process " << rank << " was " << local_alltoall << std::endl;
-#endif
 
         if(rank == 0) {
             std::cout << "global alltoall time: " << global_alltoall << std::endl;
         }
+#endif
 
         if (((num_alltoall % 50) == 0) && (rank == 0)) {
             int iterations = num_alltoall - warm_up_iterations;
@@ -584,10 +584,12 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
 
     double global_whole_compositing = global_sum / commSize;
 
+#if VERBOSE
     if(myRank == 0) {
         std::cout<<"Global gather: " << global_gather <<std::endl;
         std::cout<<"Global whole compositing: " << global_whole_compositing <<std::endl;
     }
+#endif
 
     if(num_gather > warm_up_iterations) {
         total_gather += global_gather;
@@ -614,14 +616,16 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
     std::cout << "Whole VDI generation time at process " << myRank << " was " << local_overall << std::endl;
 #endif
 
-    global_sum = 0;
-    MPI_Reduce(&local_overall, &global_sum, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    double global_overall_sum = 0;
+    MPI_Reduce(&local_overall, &global_overall_sum, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 
-    double global_overall = global_sum / commSize;
+    double global_overall = global_overall_sum / commSize;
 
+#if VERBOSE
     if(myRank == 0) {
         std::cout<<"Global overall time: " << global_overall <<std::endl;
     }
+#endif
 
     if(num_whole_vdi > warm_up_iterations) {
         total_whole_vdi += global_overall;
