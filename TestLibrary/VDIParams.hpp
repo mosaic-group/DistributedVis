@@ -12,7 +12,7 @@ const int numOutputSupsegs = 25;
 const int colorSize = windowWidth * windowHeight * numSupersegments * 4 * 4;
 const int depthSize = windowWidth * windowHeight * numSupersegments * 4 * 2;
 
-const std::string datasetName = "Isotropic";
+const std::string datasetName = "Rotstrat";
 const bool dataset16bit = true;
 const bool benchmarking = true;
 
