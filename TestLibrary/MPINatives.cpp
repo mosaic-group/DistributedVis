@@ -644,8 +644,12 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
     double local_overall = elapsed_overall.count() * 1e-9;
 
     std::cout << "Whole VDI generation time at process " << myRank << " was " << local_overall << std::endl;
-
+#if PROFILING
     global_sum = 0;
+#endif
+#if !PROFILING
+    double global_sum = 0;
+#endif
     MPI_Reduce(&local_overall, &global_sum, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 
     double global_overall = global_sum / commSize;
