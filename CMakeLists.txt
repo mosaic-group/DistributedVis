@@ -6,6 +6,8 @@ project(DistributedVis)
 find_package(Java)
 find_package(JNI)
 
+set(IceT_DIR $ENV{ICET_PATH})
+
 FIND_PACKAGE(IceT REQUIRED)
 FIND_PACKAGE(OpenGL REQUIRED)
 

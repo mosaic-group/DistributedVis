@@ -5,8 +5,7 @@ find_package(JNI)
 
 find_package(MPI)
 
-#set(IceT_DIR $ENV{ICET_PATH})
-set(IceT_DIR "/home/aryaman/Repositories/icet/build/lib/")
+set(IceT_DIR $ENV{ICET_PATH})
 
 FIND_PACKAGE(IceT REQUIRED)
 FIND_PACKAGE(OpenGL REQUIRED)
