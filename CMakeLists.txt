@@ -6,6 +6,12 @@ project(DistributedVis)
 find_package(Java)
 find_package(JNI)
 
+FIND_PACKAGE(IceT REQUIRED)
+FIND_PACKAGE(OpenGL REQUIRED)
+
+message("IceT path: ${IceT_DIR}")
+message("IceT lib: ${ICET_CORE_LIBS}")
+
 #set(JNI_LIBRARIES /usr/lib/jvm/adoptopenjdk-11-hotspot-amd64/lib/libjawt.so;/usr/lib/jvm/adoptopenjdk-11-hotspot-amd64/lib/server/libjvm.so)
 
 find_package(MPI REQUIRED)
@@ -27,6 +33,7 @@ add_executable(CompositingTest VDICompositingTest.cpp TestLibrary/MPINatives.cpp
 target_include_directories(DistributedVis PUBLIC
         "${CMAKE_SOURCE_DIR}/TestLibrary"
         ${MPI_C_INCLUDE_PATH}
+        ${ICET_INCLUDE_DIRS}
         )
 
 target_include_directories(CompositingTest PUBLIC
@@ -46,6 +53,7 @@ target_link_libraries(DistributedVis PUBLIC pthread)
 target_link_directories(DistributedVis PUBLIC TestLibrary)
 target_link_directories(DistributedVis PUBLIC MPILibrary)
 target_link_libraries(DistributedVis PUBLIC ${MPI_CXX_LIBRARIES})
+target_link_libraries(DistributedVis PUBLIC ${ICET_CORE_LIBS} ${ICET_GL_LIBS} ${ICET_MPI_LIBS})
 
 target_link_libraries(CompositingTest PUBLIC ${JNI_LIBRARIES})
 target_link_libraries(CompositingTest PUBLIC pthread)

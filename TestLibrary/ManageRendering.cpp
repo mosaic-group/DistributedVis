@@ -35,7 +35,7 @@ JVMData setupJVM(bool isCluster, std::string className) {
             "-Dorg.lwjgl.system.stackSize=1000";
 
     options[3].optionString = (char *)
-            "-Dscenery.Headless=true";
+            "-Dscenery.Headless=false";
 
     options[4].optionString = (char *)
             "-Dscenery.LogLevel=info";
@@ -135,6 +135,19 @@ JVMData setupJVM(bool isCluster, std::string className) {
     jvmData.env->DeleteLocalRef(localObj);
 
     return jvmData;
+}
+
+void setupICET(int windowWidth, int windowHeight) {
+    IceTCommunicator comm;
+
+    comm = icetCreateMPICommunicator(MPI_COMM_WORLD);
+
+    IceTBitField diag_level = ICET_DIAG_ALL_NODES | ICET_DIAG_WARNINGS;
+
+    icetCreateContext(comm);
+    icetDiagnostics(diag_level);
+
+    icetAddTile(0, 0, windowWidth, windowHeight, 0);
 }
 
 void doRender(JVMData jvmData) {

@@ -5,6 +5,13 @@
 #include <chrono>
 #include <cmath>
 #include <algorithm>
+#include <IceT.h>
+#include <IceTGL.h>
+#include <IceTMPI.h>
+#include <IceTDevCommunication.h>
+#include <IceTDevState.h>
+#include <zconf.h>
+
 
 #define VERBOSE false
 
@@ -89,11 +96,12 @@ void registerNatives(JVMData jvmData) {
 //                                { (char *)"distributeVDIsForBenchmark", (char *)"(Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;IIJJJII)V", (void *)&distributeVDIsForBenchmark },
 //                                { (char *)"distributeVDIsWithVariableLength", (char *)"(Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;[I[IIJJJZII)V", (void *)&distributeVDIsWithVariableLength },
                                 { (char *)"gatherCompositedVDIs", (char *)"(Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;IIIIJJIJ)V", (void *)&gatherCompositedVDIs },
+                                { (char *)"compositeImages", (char *)"(Ljava/nio/ByteBuffer;IIJ)V", (void *) &compositeImages },
                                 {(char *)"reduceAcrossPEs", (char *)"(D)D", (void *)&reduce},
 
     };
 
-    int ret = jvmData.env->RegisterNatives(jvmData.clazz, methods, 4);
+    int ret = jvmData.env->RegisterNatives(jvmData.clazz, methods, 5);
     if(ret < 0) {
         if( jvmData.env->ExceptionOccurred() ) {
             jvmData.env->ExceptionDescribe();
@@ -309,6 +317,103 @@ int distributeVariable(int *counts, int *countsRecv, void * sendBuf, void * recv
     MPI_Alltoallv(sendBuf, counts, displacementSend, MPI_BYTE, recvBuf, countsRecv, displacementRecv, MPI_BYTE, MPI_COMM_WORLD);
 
     return displacementRecvSum;
+}
+
+void compositeImages(JNIEnv *e, jobject clazzObject, jobject subImage, jint myRank, jint commSize, jlong imagePointer) {
+#if VERBOSE
+    std::cout<<"In image compositing function. Comm size is "<<commSize<<std::endl;
+    IceTInt global_viewport[4];
+    icetGetIntegerv(ICET_GLOBAL_VIEWPORT, global_viewport);
+
+    std::cout<<"The global viewport is: width: "<<global_viewport[2] << " height: " << global_viewport[3] <<std::endl;
+#endif
+
+    IceTFloat background_color[4] = { 0.0, 0.0, 0.0, 0.0 };
+
+    void *imageBuffer = e->GetDirectBufferAddress(subImage);
+
+    icetSetColorFormat(ICET_IMAGE_COLOR_RGBA_UBYTE);
+    icetSetDepthFormat(ICET_IMAGE_DEPTH_NONE);
+
+    icetStrategy(ICET_STRATEGY_SEQUENTIAL);
+//    icetSingleImageStrategy(ICET_SINGLE_IMAGE_STRATEGY_RADIXKR)
+
+    IceTImage image;
+
+    icetSetColorFormat(ICET_IMAGE_COLOR_RGBA_UBYTE);
+    icetCompositeMode(ICET_COMPOSITE_MODE_BLEND);
+    icetEnable(ICET_ORDERED_COMPOSITE);
+
+    int order[commSize];
+
+    for (int i = 0; i < commSize; ++i) {
+        order[i] = i;
+    }
+
+    icetCompositeOrder(order);
+
+    image = icetCompositeImage(
+            imageBuffer,
+            NULL,
+            NULL,
+            NULL,
+            NULL,
+            background_color
+            );
+
+
+    if(myRank == 0) {
+        const char *color_buffer = (char *)icetImageGetColorcui(image);
+
+        IceTSizeType width;
+        IceTSizeType height;
+        width = icetImageGetWidth(image);
+        height = icetImageGetHeight(image);
+
+#if VERBOSE
+        std::cout << "Composited the image with dimensions: " << width << " " << height << std::endl;
+#endif
+
+        std::string dataset = datasetName;
+
+        dataset += "_" + std::to_string(commSize) + "_" + std::to_string(myRank);
+
+        std::string basePath = "/home/aryaman/TestingData/";
+
+        if ((count % 10) == 0) {
+
+            std::cout << "Writing the composited image " << count << " now" << std::endl;
+
+            std::string filename = basePath + dataset + "FinalImage_" + std::to_string(count) + ".raw";
+
+            std::ofstream b_stream(filename.c_str(),
+                                   std::fstream::out | std::fstream::binary);
+            if (b_stream) {
+                b_stream.write(static_cast<const char *>(color_buffer),
+                               windowHeight * windowWidth * 4);
+
+                if (b_stream.good()) {
+                    std::cout << "Writing was successful" << std::endl;
+                }
+            }
+        }
+        count++;
+
+        jclass clazz = e->GetObjectClass(clazzObject);
+        jmethodID displayMethod = e->GetMethodID(clazz, "displayComposited", "(Ljava/nio/ByteBuffer;)V");
+
+        jobject bbCcomposited = e->NewDirectByteBuffer((void *)color_buffer, windowHeight * windowWidth * 4);
+        if(e->ExceptionOccurred()) {
+            e->ExceptionDescribe();
+            e->ExceptionClear();
+        }
+
+        e->CallVoidMethod(clazzObject, displayMethod, bbCcomposited);
+        if(e->ExceptionOccurred()) {
+            e->ExceptionDescribe();
+            e->ExceptionClear();
+        }
+    }
 }
 
 void distributeDenseVDIs(JNIEnv *e, jobject clazzObject, jobject colorVDI, jobject depthVDI, jobject prefixSums, jintArray supersegmentCounts, jint commSize, jlong colPointer, jlong depthPointer, jlong prefixPointer, jlong mpiPointer) {
