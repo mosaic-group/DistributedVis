@@ -97,6 +97,7 @@ void slice2GB(JVMData jvmData, const int volume_dimensions[], int start_slice, c
     std::ifstream volumeFile (filename, std::ios::in | std::ios::binary);
     if(!volumeFile.is_open()) {
         std::cerr<< "Could not open the volume file! " << std::endl;
+        std::exit(-1);
     }
 
     volumeFile.seekg((long int)prev_slices * (long int)volume_dimensions[0] * (long int)volume_dimensions[1] * (dataset16bit? 2: 1));
