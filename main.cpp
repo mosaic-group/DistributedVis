@@ -165,6 +165,8 @@ void decomposeBlocks(JVMData jvmData, int num_processes, const int volume_dimens
     std::cout << "pos offset: " << pos_offset[0] << ", " << pos_offset[1] << ", " << pos_offset[2] <<std::endl;
 
     slice2GB(jvmData, block_dims, 0, pos_offset, pixelToWorld, volume_path);
+
+    std::cout << "Process " << rank << " has read and updated all volumes." << std::endl;
 }
 
 void decomposePlanes(JVMData jvmData, int num_processes, const int volume_dimensions[], int rank, float pixelToWorld) {
