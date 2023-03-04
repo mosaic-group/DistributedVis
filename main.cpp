@@ -191,7 +191,7 @@ void decomposePlanes(JVMData jvmData, int num_processes, const int volume_dimens
 
     float pos_offset[] = {0.0f, 0.0f, 0.0f};
 
-    slice2GB(jvmData, proc_vol_dims, proc_start, pos_offset, pixelToWorld, getEnvVar("DATASET_PATH") + "/" + datasetName + "/Part1/" + datasetName + ".raw");
+    slice2GB(jvmData, proc_vol_dims, proc_start, pos_offset, pixelToWorld, getEnvVar("DATASET_PATH") + "/" + datasetName + "/" + datasetName + ".raw");
 }
 
 void decomposeDomain(decompositionTypes type, JVMData jvmData, int num_processes, const int volume_dimensions[], int rank, float pixelToWorld) {
