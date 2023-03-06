@@ -1,6 +1,7 @@
 #include <mpi.h>
 #include "MPINatives.hpp"
 #include "VDIParams.hpp"
+#include <cmath>
 #include <fstream>
 #include <chrono>
 #include <cmath>
@@ -11,6 +12,7 @@
 #include <IceTDevCommunication.h>
 #include <IceTDevState.h>
 #include <zconf.h>
+#include <vector>
 
 
 #define VERBOSE false
@@ -96,7 +98,7 @@ void registerNatives(JVMData jvmData) {
 //                                { (char *)"distributeVDIsForBenchmark", (char *)"(Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;IIJJJII)V", (void *)&distributeVDIsForBenchmark },
 //                                { (char *)"distributeVDIsWithVariableLength", (char *)"(Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;[I[IIJJJZII)V", (void *)&distributeVDIsWithVariableLength },
                                 { (char *)"gatherCompositedVDIs", (char *)"(Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;IIIIJJIJ)V", (void *)&gatherCompositedVDIs },
-                                { (char *)"compositeImages", (char *)"(Ljava/nio/ByteBuffer;IIJ)V", (void *) &compositeImages },
+                                { (char *)"compositeImages", (char *)"(Ljava/nio/ByteBuffer;II[FJ)V", (void *) &compositeImages },
                                 {(char *)"reduceAcrossPEs", (char *)"(D)D", (void *)&reduce},
 
     };
@@ -114,6 +116,11 @@ void registerNatives(JVMData jvmData) {
     }
 }
 
+std::vector<std::vector<float>> proc_positions;
+
+void setCentroids(std::vector<std::vector<float>> ptr) {
+    proc_positions = ptr;
+}
 
 
 void distributeVDIs(JNIEnv *e, jobject clazzObject, jobject subVDICol, jobject subVDIDepth, jint sizePerProcess, jint commSize, jlong colPointer, jlong depthPointer, jlong mpiPointer) {
@@ -319,7 +326,7 @@ int distributeVariable(int *counts, int *countsRecv, void * sendBuf, void * recv
     return displacementRecvSum;
 }
 
-void compositeImages(JNIEnv *e, jobject clazzObject, jobject subImage, jint myRank, jint commSize, jlong imagePointer) {
+void compositeImages(JNIEnv *e, jobject clazzObject, jobject subImage, jint myRank, jint commSize, jfloatArray camPos, jlong imagePointer) {
 #if VERBOSE
     std::cout<<"In image compositing function. Comm size is "<<commSize<<std::endl;
     IceTInt global_viewport[4];
@@ -346,8 +353,40 @@ void compositeImages(JNIEnv *e, jobject clazzObject, jobject subImage, jint myRa
 
     int order[commSize];
 
-    for (int i = 0; i < commSize; ++i) {
-        order[i] = i;
+    float * cam = e->GetFloatArrayElements(camPos, NULL);
+    std::vector<float> distances;
+    std::vector<int> procs;
+
+    for(int i = 0; i < commSize; i++) {
+        float distance = std::sqrt(
+                (proc_positions[i][0] - cam[0])*(proc_positions[i][0] - cam[0]) +
+                (proc_positions[i][1] - cam[1])*(proc_positions[i][1] - cam[1]) +
+                (proc_positions[i][2] - cam[2])*(proc_positions[i][2] - cam[2])
+                );
+        distances.push_back(distance);
+
+        procs.push_back(i);
+    }
+
+    std::cout << "Cam pos: " << cam[0] << " " << cam[1] << " " << cam[2] << std::endl;
+
+    if(myRank == 0) {
+        for(int k = 0; k < commSize; k++) {
+            std::cout << "Proc: " << k << " has centroid: " << proc_positions[k][0] << " " << proc_positions[k][1] << " " << proc_positions[k][2] << std::endl;
+            std::cout << "Distance of proc " << k << ": " << distances[k] << std::endl;
+        }
+    }
+
+    std::sort(procs.begin(), procs.end(), [&](int i, int j){return distances[i] < distances[j];});
+
+    if(myRank == 0) {
+        std::cout << "Order is: " << std::endl;
+    }
+    for(int i = 0; i < commSize; i++) {
+        order[i] = procs[i];
+        if(myRank == 0) {
+            std::cout << "At pos: " << i << " proc: " << order[i] << std::endl;
+        }
     }
 
     icetCompositeOrder(order);

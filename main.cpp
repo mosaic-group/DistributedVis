@@ -134,7 +134,60 @@ void slice2GB(JVMData jvmData, const int volume_dimensions[], int start_slice, c
     }
 }
 
-void decomposeBlocks(JVMData jvmData, int num_processes, const int volume_dimensions[], int rank, float pixelToWorld) {
+int * getBlockID(int proc_rank, int num_cells_x, int num_cells_y) {
+    int *id = new int[3];
+
+    id[2] = proc_rank / (num_cells_x * num_cells_y);
+    int remainder = proc_rank % (num_cells_x * num_cells_y);
+
+    id[1] = remainder / num_cells_x;
+    id[0] = remainder % num_cells_x;
+
+    return id;
+}
+
+float * getBlockPos(int rank, const int * volume_dimensions, float pixelToWorld, int num_x, int num_y, int num_z) {
+    //return the Front Bottom Left position for the block
+    float * pos = new float[3];
+    int * id = getBlockID(rank, num_x, num_y);
+
+    int block_x = id[0];
+    int block_y = id[1];
+    int block_z = id[2];
+
+    pos[0] = pixelToWorld * (float)(block_x * (int)(volume_dimensions[0] / num_x));
+    pos[1] = -1 * pixelToWorld * (float)(block_y * (int)(volume_dimensions[1] / num_y));
+    pos[2] = pixelToWorld * (float)(block_z * (int)(volume_dimensions[2] / num_z));
+    return pos;
+}
+
+std::vector<std::vector<float>> computeCentroids(int num_processes, int * volume_dimensions, float pixelToWorld, int num_cells_x, int num_cells_y, int num_cells_z) {
+    // for all ranks, find block ID, then block pos FBL and pos FTR, divide by two
+
+    auto centroids = std::vector<std::vector<float>>(num_processes, std::vector<float>(3));
+
+    for(int i = 0; i < num_processes; i++) {
+        float * fbl = getBlockPos(i, volume_dimensions, pixelToWorld, num_cells_x, num_cells_y, num_cells_z);
+
+        float ftr[3];
+
+        ftr[0] = fbl[0] + pixelToWorld * (int)(volume_dimensions[0] / num_cells_x);
+        ftr[1] = fbl[1] - pixelToWorld * (int)(volume_dimensions[1] / num_cells_y);
+        ftr[2] = fbl[2] + pixelToWorld * (int)(volume_dimensions[2] / num_cells_z);
+
+        for(int j = 0; j < 3; j++) {
+            centroids[i][j] = (fbl[j] + ftr[j])/2.0f;
+        }
+
+        delete[] fbl;
+
+    }
+
+    return centroids;
+
+}
+
+void decomposeBlocks(JVMData jvmData, int num_processes, int volume_dimensions[], int rank, float pixelToWorld) {
 
     int * block_numbers = getBlockNumbers(getEnvVar("DATASET_PATH") + "/" + datasetName + "/Cubes" + std::to_string(num_processes));
 
@@ -142,17 +195,12 @@ void decomposeBlocks(JVMData jvmData, int num_processes, const int volume_dimens
     int num_y = block_numbers[1];
     int num_z = block_numbers[2];
 
-    int block_z = rank / (num_x * num_y);
-    int remainder = rank % (num_x * num_y);
+    float * pos_offset = getBlockPos(rank, volume_dimensions, pixelToWorld, num_x, num_y, num_z);
 
-    int block_y = remainder / num_x;
-    int block_x = remainder % num_x;
+    std::vector<std::vector<float>> centroids(num_processes, std::vector<float>(3));
+    centroids = computeCentroids(num_processes, volume_dimensions, pixelToWorld, num_x, num_y, num_z);
 
-    float x_offset = pixelToWorld * (float)(block_x * (int)(volume_dimensions[0] / num_x));
-    float y_offset = -1 * pixelToWorld * (float)(block_y * (int)(volume_dimensions[1] / num_y));
-    float z_offset = pixelToWorld * (float)(block_z * (int)(volume_dimensions[2] / num_z));
-
-    float pos_offset[] = {x_offset, y_offset, z_offset};
+    setCentroids(centroids);
 
     std::string filepath = getEnvVar("DATASET_PATH") + "/" + datasetName + "/Cubes" + std::to_string(num_processes) + "/Part" + std::to_string(rank);
 
@@ -196,7 +244,7 @@ void decomposePlanes(JVMData jvmData, int num_processes, const int volume_dimens
     slice2GB(jvmData, proc_vol_dims, proc_start, pos_offset, pixelToWorld, getEnvVar("DATASET_PATH") + "/" + datasetName + "/" + datasetName + ".raw");
 }
 
-void decomposeDomain(decompositionTypes type, JVMData jvmData, int num_processes, const int volume_dimensions[], int rank, float pixelToWorld) {
+void decomposeDomain(decompositionTypes type, JVMData jvmData, int num_processes, int volume_dimensions[], int rank, float pixelToWorld) {
     if(type == decompositionTypes::plane) {
         decomposePlanes(jvmData, num_processes, volume_dimensions, rank, pixelToWorld);
     } else if(type == decompositionTypes::block) {
