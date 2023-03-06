@@ -802,7 +802,7 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
             std::cout<<"Writing the final gathered VDI now"<<std::endl;
 
             std::string filename = basePath + dataset + "FinalVDI_" + std::to_string(windowWidth) + "_" + std::to_string(windowHeight) + "_" + std::to_string(numOutputSupsegs)
-                                   + "_" + std::to_string(vo) + "_" + std::to_string(count) + "_ndc";
+                                   + "_" + std::to_string(vo) + "_4_ndc";
 
             std::string filenameCol = filename + "_col";
 
