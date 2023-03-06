@@ -15,6 +15,9 @@ enum decompositionTypes {
     block
 };
 
+std::string datasetName;
+bool dataset16bit;
+
 std::string getEnvVar( std::string const & key )
 {
     char * val = getenv( key.c_str() );
@@ -256,6 +259,11 @@ void decomposeDomain(decompositionTypes type, JVMData jvmData, int num_processes
 int main() {
     std::cout << "Hello, World!" << std::endl;
 
+    datasetName = getEnvVar("DATASET_NAME");
+    dataset16bit = getEnvVar("DATASET_16_BIT") == "true";
+
+//    setDatasetProperties(datasetName, dataset16bit);
+
     std::string dataset = datasetName;
     const bool is16bit = dataset16bit;
     bool generateVDIs = false;
@@ -288,7 +296,7 @@ int main() {
         node_rank = 0;
     }
 
-    JVMData jvmData = setupJVM(isCluster, "DistributedVolumes");
+    JVMData jvmData = setupJVM(isCluster, "DistributedVolumes", rank);
 
     registerNatives(jvmData);
 

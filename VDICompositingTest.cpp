@@ -36,7 +36,7 @@ int main() {
         node_rank = 0;
     }
 
-    JVMData jvmData = setupJVM(isCluster, "VDICompositingTest");
+    JVMData jvmData = setupJVM(isCluster, "VDICompositingTest", 0);
 
     registerNatives(jvmData);
 

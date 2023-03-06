@@ -9,6 +9,7 @@
 #include <vector>
 #include "JVMData.hpp"
 
+void setDatasetProperties(std::string name, bool is16bit);
 void setCentroids(std::vector<std::vector<float>> ptr);
 void distributeVDIs(JNIEnv *e, jobject clazzObject, jobject subVDICol, jobject subVDIDepth, jint sizePerProcess, jint commSize, jlong colPointer, jlong depthPointer, jlong mpiPointer);
 void distributeDenseVDIs(JNIEnv *e, jobject clazzObject, jobject colorVDI, jobject depthVDI, jobject prefixSums, jintArray supsegCounts, jint commSize, jlong colPointer, jlong depthPointer, jlong prefixPointer, jlong mpiPointer);

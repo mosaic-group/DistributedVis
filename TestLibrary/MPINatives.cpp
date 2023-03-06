@@ -39,6 +39,9 @@ long int num_whole_vdi = 0;
 
 int warm_up_iterations = 10;
 
+extern std::string datasetName;
+extern bool dataset16bit;
+
 void setPointerAddresses(JVMData jvmData, MPI_Comm renderComm) {
     void * allToAllColorPointer = malloc(windowHeight * windowWidth * numSupersegments * 4 * 4);
     void * allToAllDepthPointer = malloc(windowWidth * windowHeight * numSupersegments * 4 * 2);
@@ -794,7 +797,7 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
     if(myRank == 0) {
 //        //send or store the VDI
 
-        if(!benchmarking && (count < 10)) {
+        if(!benchmarking && (count % 2 == 0)) {
 
             std::cout<<"Writing the final gathered VDI now"<<std::endl;
 
@@ -818,8 +821,11 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
                     std::cout<<"Writing was successful"<<std::endl;
                 }
             }
-            count++;
         }
+    }
+    count++;
+    if(count > 10) {
+        std::exit(1);
     }
     begin_whole_vdi = std::chrono::high_resolution_clock::now();
 }

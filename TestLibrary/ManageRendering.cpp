@@ -1,7 +1,7 @@
 #include "ManageRendering.hpp"
 #include <dirent.h>
 
-JVMData setupJVM(bool isCluster, std::string className) {
+JVMData setupJVM(bool isCluster, std::string className, int rank) {
     JVMData jvmData{};
 
     DIR *dir;
@@ -45,9 +45,9 @@ JVMData setupJVM(bool isCluster, std::string className) {
 
     if(isCluster) {
         options[5].optionString = (char *)
-                "-Dorg.lwjgl.system.SharedLibraryExtractPath=/ssd/ws/argupta-vdi_generation/";
+                (std::string("-Dorg.lwjgl.system.SharedLibraryExtractPath=/beegfs/ws/1/argupta-vdi_generation/lw_files/rank") + std::to_string(rank) + "/").c_str();
         options[6].optionString = (char *)
-                "-Dorg.lwjgl.librarypath=/ssd/ws/argupta-vdi_generation/";
+                (std::string("-Dorg.lwjgl.librarypath=/beegfs/ws/1/argupta-vdi_generation/lw_files/rank") + std::to_string(rank) + "/").c_str();
     } else {
         options[5].optionString = (char *)
                 "-Dorg.lwjgl.system.SharedLibraryExtractPath=/tmp/";

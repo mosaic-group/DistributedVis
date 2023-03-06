@@ -10,7 +10,7 @@
 #include <IceT.h>
 #include <IceTMPI.h>
 
-JVMData setupJVM(bool isCluster, std::string className);
+JVMData setupJVM(bool isCluster, std::string className, int rank);
 void doRender(JVMData jvmData);
 void setSceneConfigured(JVMData jvmData);
 void waitRendererConfigured(JVMData jvmData);
