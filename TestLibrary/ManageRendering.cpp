@@ -43,11 +43,13 @@ JVMData setupJVM(bool isCluster, std::string className, int rank) {
 //    options[4].optionString = (char *)
 //                                      "-Dscenery.LogLevel=debug";
 
+    std::string option1 = std::string("-Dorg.lwjgl.system.SharedLibraryExtractPath=/beegfs/ws/1/argupta-vdi_generation/lw_files/rank") + std::to_string(rank) + std::string("/");
+    std::string option2 = std::string("-Dorg.lwjgl.librarypath=/beegfs/ws/1/argupta-vdi_generation/lw_files/rank") + std::to_string(rank) + std::string ("/");
     if(isCluster) {
         options[5].optionString = (char *)
-                (std::string("-Dorg.lwjgl.system.SharedLibraryExtractPath=/beegfs/ws/1/argupta-vdi_generation/lw_files/rank") + std::to_string(rank) + "/").c_str();
+                (option1).c_str();
         options[6].optionString = (char *)
-                (std::string("-Dorg.lwjgl.librarypath=/beegfs/ws/1/argupta-vdi_generation/lw_files/rank") + std::to_string(rank) + "/").c_str();
+                (option2).c_str();
     } else {
         options[5].optionString = (char *)
                 "-Dorg.lwjgl.system.SharedLibraryExtractPath=/tmp/";
