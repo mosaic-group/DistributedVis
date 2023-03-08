@@ -856,15 +856,15 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
         //the benchmark is complete
 
 #if PROFILING
-        writeBenchmarkFile("distribute_full", distributeTimes, commSize, myRank);
-        writeBenchmarkFile("gather_full", gatherTimes, commSize, myRank);
-        writeBenchmarkFile("whole_composite_full", wholeCompositeTimes, commSize, myRank);
+        writeBenchmarkFile("distribute", distributeTimes, commSize, myRank);
+        writeBenchmarkFile("gather", gatherTimes, commSize, myRank);
+        writeBenchmarkFile("whole_composite", wholeCompositeTimes, commSize, myRank);
 //        writeBenchmarkFile("num_supsegs", numSupsegsGenerated, commSize, myRank);
 
         if(myRank == 0) {
-            writeBenchmarkFile("global_distr_full", globalDistributeTimes, commSize, myRank);
-            writeBenchmarkFile("global_gather_full", globalGatherTimes, commSize, myRank);
-            writeBenchmarkFile("global_whole_comp_full", globalWholeCompositeTimes, commSize, myRank);
+            writeBenchmarkFile("global_distr", globalDistributeTimes, commSize, myRank);
+            writeBenchmarkFile("global_gather", globalGatherTimes, commSize, myRank);
+            writeBenchmarkFile("global_whole_comp", globalWholeCompositeTimes, commSize, myRank);
 //            writeBenchmarkFile("global_num_supsegs", globalNumSupsegsGenerated, commSize, myRank);
         }
 #else //writing whole VDI timings only if not profiling
