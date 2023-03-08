@@ -861,6 +861,8 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
             writeBenchmarkFile("global_whole_vdi", globalWholeVDITimes, commSize, myRank);
         }
 
+        std::cout<< "The benchmark files have been written"<<std::endl;
+
         //benchmark complete so exit
         std::exit(0);
     }
