@@ -839,7 +839,7 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
         std::cout<< "Number of VDIs generated: " << num_whole_vdi << " average time so far: " << average_overall << std::endl;
     }
 
-    if((num_whole_vdi - warm_up_iterations) == total_iterations) {
+    if((num_whole_vdi - warm_up_iterations - 1) == total_iterations) {
         //the benchmark is complete
 
 #if PROFILING
