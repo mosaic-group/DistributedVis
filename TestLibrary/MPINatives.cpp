@@ -854,13 +854,13 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
             writeBenchmarkFile("global_whole_comp", globalWholeCompositeTimes, commSize, myRank);
             writeBenchmarkFile("global_num_supsegs", globalNumSupsegsGenerated, commSize, myRank);
         }
-#endif
+#else //writing whole VDI timings only if not profiling
         writeBenchmarkFile("whole_vdi", wholeVDITimes, commSize, myRank);
 
         if(myRank == 0) {
             writeBenchmarkFile("global_whole_vdi", globalWholeVDITimes, commSize, myRank);
         }
-
+#endif
         std::cout<< "The benchmark files have been written"<<std::endl;
 
         //benchmark complete so exit
