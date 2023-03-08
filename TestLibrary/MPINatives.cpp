@@ -193,15 +193,21 @@ void distributeVDIs(JNIEnv *e, jobject clazzObject, jobject subVDICol, jobject s
     begin_whole_compositing = std::chrono::high_resolution_clock::now();
 #endif
 
+#if VERBOSE
     std::cout<<"Starting all to all"<<std::endl;
+#endif
 
     MPI_Alltoall(ptrCol, windowHeight * windowWidth * numSupersegments * 4 * 4 / commSize, MPI_BYTE, recvBufCol, windowHeight * windowWidth * numSupersegments * 4 * 4 / commSize, MPI_BYTE, MPI_COMM_WORLD);
 
+#if VERBOSE
     std::cout<<"Finished color all to all"<<std::endl;
+#endif
 
     MPI_Alltoall(ptrDepth, windowHeight * windowWidth * numSupersegments * 4 * 2 / commSize, MPI_BYTE, recvBufDepth, windowHeight * windowWidth * numSupersegments * 4 * 2 / commSize, MPI_BYTE, MPI_COMM_WORLD);
 
+#if VERBOSE
     printf("Finished both alltoalls\n");
+#endif
 
 #if PROFILING
     {
@@ -219,6 +225,9 @@ void distributeVDIs(JNIEnv *e, jobject clazzObject, jobject subVDICol, jobject s
 
         if (num_alltoall > warm_up_iterations) {
             total_alltoall += global_alltoall;
+
+            distributeTimes.push_back((float)local_alltoall);
+            globalDistributeTimes.push_back((float)global_alltoall);
         }
 
         num_alltoall++;
@@ -226,11 +235,13 @@ void distributeVDIs(JNIEnv *e, jobject clazzObject, jobject subVDICol, jobject s
         int rank;
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
+#if VERBOSE
         std::cout << "Distribute time (full-res) at process " << rank << " was " << local_alltoall << std::endl;
 
         if(rank == 0) {
             std::cout << "global alltoall time: " << global_alltoall << std::endl;
         }
+#endif
 
         if (((num_alltoall % 50) == 0) && (rank == 0)) {
             int iterations = num_alltoall - warm_up_iterations;
@@ -256,7 +267,9 @@ void distributeVDIs(JNIEnv *e, jobject clazzObject, jobject subVDICol, jobject s
         e->ExceptionClear();
     }
 
+#if VERBOSE
     std::cout<<"Finished distributing the VDIs. Calling the Composite method now!"<<std::endl;
+#endif
 
     e->CallVoidMethod(clazzObject, compositeMethod, bbCol, bbDepth);
     if(e->ExceptionOccurred()) {
@@ -843,16 +856,16 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
         //the benchmark is complete
 
 #if PROFILING
-        writeBenchmarkFile("distribute", distributeTimes, commSize, myRank);
-        writeBenchmarkFile("gather", gatherTimes, commSize, myRank);
-        writeBenchmarkFile("whole_composite", wholeCompositeTimes, commSize, myRank);
-        writeBenchmarkFile("num_supsegs", numSupsegsGenerated, commSize, myRank);
+        writeBenchmarkFile("distribute_full", distributeTimes, commSize, myRank);
+        writeBenchmarkFile("gather_full", gatherTimes, commSize, myRank);
+        writeBenchmarkFile("whole_composite_full", wholeCompositeTimes, commSize, myRank);
+//        writeBenchmarkFile("num_supsegs", numSupsegsGenerated, commSize, myRank);
 
         if(myRank == 0) {
-            writeBenchmarkFile("global_distr", globalDistributeTimes, commSize, myRank);
-            writeBenchmarkFile("global_gather", globalGatherTimes, commSize, myRank);
-            writeBenchmarkFile("global_whole_comp", globalWholeCompositeTimes, commSize, myRank);
-            writeBenchmarkFile("global_num_supsegs", globalNumSupsegsGenerated, commSize, myRank);
+            writeBenchmarkFile("global_distr_full", globalDistributeTimes, commSize, myRank);
+            writeBenchmarkFile("global_gather_full", globalGatherTimes, commSize, myRank);
+            writeBenchmarkFile("global_whole_comp_full", globalWholeCompositeTimes, commSize, myRank);
+//            writeBenchmarkFile("global_num_supsegs", globalNumSupsegsGenerated, commSize, myRank);
         }
 #else //writing whole VDI timings only if not profiling
         writeBenchmarkFile("whole_vdi", wholeVDITimes, commSize, myRank);
