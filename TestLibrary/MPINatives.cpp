@@ -21,6 +21,17 @@
 
 int count = 0;
 
+std::vector<float> distributeTimes;
+std::vector<float> gatherTimes;
+std::vector<float> wholeCompositeTimes;
+std::vector<float> wholeVDITimes;
+std::vector<long> numSupsegsGenerated;
+std::vector<float> globalDistributeTimes;
+std::vector<float> globalGatherTimes;
+std::vector<float> globalWholeCompositeTimes;
+std::vector<float> globalWholeVDITimes;
+std::vector<long> globalNumSupsegsGenerated;
+
 auto begin_whole_vdi = std::chrono::high_resolution_clock::now();
 auto end_whole_vdi = std::chrono::high_resolution_clock::now();
 auto begin = std::chrono::high_resolution_clock::now();
@@ -38,9 +49,34 @@ long int num_gather = 0;
 long int num_whole_vdi = 0;
 
 int warm_up_iterations = 10;
+int total_iterations = 20;
 
 extern std::string datasetName;
 extern bool dataset16bit;
+
+void writeBenchmarkFile(const std::string& description, const std::vector<float>& data, int commSize, int myRank) {
+
+    std::ofstream benchmarkFile(datasetName + "_" + std::to_string(numOutputSupsegs) + "_" + description + "_" + std::to_string(commSize) + "_" + std::to_string(myRank)
+                                 + ".csv");
+
+    for(auto val: data) {
+        benchmarkFile << std::to_string(val) << ", ";
+    }
+    benchmarkFile << std::endl;
+    benchmarkFile.close();
+}
+
+void writeBenchmarkFile(const std::string& description, const std::vector<long>& data, int commSize, int myRank) {
+
+    std::ofstream benchmarkFile(datasetName + "_" + std::to_string(numOutputSupsegs) + "_" + description + "_" + std::to_string(commSize) + "_" + std::to_string(myRank)
+                                + ".csv");
+
+    for(auto val: data) {
+        benchmarkFile << std::to_string(val) << ", ";
+    }
+    benchmarkFile << std::endl;
+    benchmarkFile.close();
+}
 
 void setPointerAddresses(JVMData jvmData, MPI_Comm renderComm) {
     void * allToAllColorPointer = malloc(windowHeight * windowWidth * numSupersegments * 4 * 4);
@@ -519,6 +555,9 @@ void distributeDenseVDIs(JNIEnv *e, jobject clazzObject, jobject colorVDI, jobje
 
         if (num_alltoall > warm_up_iterations) {
             total_alltoall += global_alltoall;
+
+            distributeTimes.push_back((float)local_alltoall);
+            globalDistributeTimes.push_back((float)global_alltoall);
         }
 
         num_alltoall++;
@@ -558,9 +597,13 @@ void distributeDenseVDIs(JNIEnv *e, jobject clazzObject, jobject colorVDI, jobje
         long global_sum;
         long local = (long)supsegsRecvd;
 
+        numSupsegsGenerated.push_back(local);
+
         MPI_Reduce(&local, &global_sum, 1, MPI_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
 
         long global_avg = global_sum/commSize;
+
+        globalNumSupsegsGenerated.push_back(global_avg);
 
         int rank;
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -741,6 +784,12 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
     if(num_gather > warm_up_iterations) {
         total_gather += global_gather;
         total_whole_compositing += global_whole_compositing;
+
+        gatherTimes.push_back((float)local_gather);
+        globalGatherTimes.push_back((float)global_gather);
+
+        wholeCompositeTimes.push_back((float)(local_whole_compositing));
+        globalWholeCompositeTimes.push_back((float)global_whole_compositing);
     }
 
     num_gather++;
@@ -776,6 +825,9 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
 
     if(num_whole_vdi > warm_up_iterations) {
         total_whole_vdi += global_overall;
+
+        wholeVDITimes.push_back((float)local_overall);
+        globalWholeVDITimes.push_back((float)global_overall);
     }
 
     num_whole_vdi++;
@@ -787,6 +839,28 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
         std::cout<< "Number of VDIs generated: " << num_whole_vdi << " average time so far: " << average_overall << std::endl;
     }
 
+    if((num_whole_vdi - warm_up_iterations) == total_iterations) {
+        //the benchmark is complete
+
+#if PROFILING
+        writeBenchmarkFile("distribute", distributeTimes, commSize, myRank);
+        writeBenchmarkFile("gather", gatherTimes, commSize, myRank);
+        writeBenchmarkFile("whole_composite", wholeCompositeTimes, commSize, myRank);
+        writeBenchmarkFile("num_supsegs", numSupsegsGenerated, commSize, myRank);
+
+        if(myRank == 0) {
+            writeBenchmarkFile("global_distr", globalDistributeTimes, commSize, myRank);
+            writeBenchmarkFile("global_gather", globalGatherTimes, commSize, myRank);
+            writeBenchmarkFile("global_whole_comp", globalWholeCompositeTimes, commSize, myRank);
+            writeBenchmarkFile("global_num_supsegs", globalNumSupsegsGenerated, commSize, myRank);
+        }
+#endif
+        writeBenchmarkFile("whole_vdi", wholeVDITimes, commSize, myRank);
+
+        if(myRank == 0) {
+            writeBenchmarkFile("global_whole_vdi", globalWholeVDITimes, commSize, myRank);
+        }
+    }
 
     std::string dataset = datasetName;
 
@@ -821,12 +895,12 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
                     std::cout<<"Writing was successful"<<std::endl;
                 }
             }
+            if(count >= 10) {
+                std::exit(1);
+            }
         }
     }
     count++;
-    if(count > 10) {
-        std::exit(1);
-    }
     begin_whole_vdi = std::chrono::high_resolution_clock::now();
 }
 
