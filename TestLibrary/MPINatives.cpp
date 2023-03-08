@@ -49,7 +49,7 @@ long int num_gather = 0;
 long int num_whole_vdi = 0;
 
 int warm_up_iterations = 10;
-int total_iterations = 20;
+int total_iterations = 144;
 
 extern std::string datasetName;
 extern bool dataset16bit;
