@@ -606,7 +606,7 @@ void distributeDenseVDIs(JNIEnv *e, jobject clazzObject, jobject colorVDI, jobje
     int supsegsRecvd = totalRecvdColor / (4 * 4);
 
 #if PROFILING
-    if(num_alltoall % 50 == 0) {
+    {
         long global_sum;
         long local = (long)supsegsRecvd;
 
@@ -620,12 +620,13 @@ void distributeDenseVDIs(JNIEnv *e, jobject clazzObject, jobject colorVDI, jobje
 
         int rank;
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+        if(num_alltoall % 50 == 0) {
+            if(rank == 0) {
+                std::cout << "The average number of supersegments generated per PE " << global_avg << std::endl;
+            }
 
-        if(rank == 0) {
-            std::cout << "The average number of supersegments generated per PE " << global_avg << std::endl;
+            std::cout << "Number of supersegments received by this process: " << supsegsRecvd << std::endl;
         }
-
-        std::cout << "Number of supersegments received by this process: " << supsegsRecvd << std::endl;
     }
 #endif
 
@@ -859,13 +860,13 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
         writeBenchmarkFile("distribute", distributeTimes, commSize, myRank);
         writeBenchmarkFile("gather", gatherTimes, commSize, myRank);
         writeBenchmarkFile("whole_composite", wholeCompositeTimes, commSize, myRank);
-//        writeBenchmarkFile("num_supsegs", numSupsegsGenerated, commSize, myRank);
+        writeBenchmarkFile("num_supsegs", numSupsegsGenerated, commSize, myRank);
 
         if(myRank == 0) {
             writeBenchmarkFile("global_distr", globalDistributeTimes, commSize, myRank);
             writeBenchmarkFile("global_gather", globalGatherTimes, commSize, myRank);
             writeBenchmarkFile("global_whole_comp", globalWholeCompositeTimes, commSize, myRank);
-//            writeBenchmarkFile("global_num_supsegs", globalNumSupsegsGenerated, commSize, myRank);
+            writeBenchmarkFile("global_num_supsegs", globalNumSupsegsGenerated, commSize, myRank);
         }
 #else //writing whole VDI timings only if not profiling
         writeBenchmarkFile("whole_vdi", wholeVDITimes, commSize, myRank);
