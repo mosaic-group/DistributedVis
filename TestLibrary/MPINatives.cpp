@@ -860,6 +860,9 @@ void gatherCompositedVDIs(JNIEnv *e, jobject clazzObject, jobject compositedVDIC
         if(myRank == 0) {
             writeBenchmarkFile("global_whole_vdi", globalWholeVDITimes, commSize, myRank);
         }
+
+        //benchmark complete so exit
+        std::exit(0);
     }
 
     std::string dataset = datasetName;
