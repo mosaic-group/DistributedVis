@@ -433,17 +433,11 @@ void compositeImages(JNIEnv *e, jobject clazzObject, jobject subImage, jint myRa
 
     std::sort(procs.begin(), procs.end(), [&](int i, int j){return distances[i] < distances[j];});
 
-#if VERBOSE
-    if(myRank == 0) {
-        std::cout << "Order is: " << std::endl;
-    }
+
     for(int i = 0; i < commSize; i++) {
         order[i] = procs[i];
-        if(myRank == 0) {
-            std::cout << "At pos: " << i << " proc: " << order[i] << std::endl;
-        }
     }
-#endif
+
 
     icetCompositeOrder(order);
 
