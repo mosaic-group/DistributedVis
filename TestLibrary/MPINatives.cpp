@@ -420,6 +420,7 @@ void compositeImages(JNIEnv *e, jobject clazzObject, jobject subImage, jint myRa
         procs.push_back(i);
     }
 
+#if VERBOSE
     std::cout << "Cam pos: " << cam[0] << " " << cam[1] << " " << cam[2] << std::endl;
 
     if(myRank == 0) {
@@ -428,9 +429,11 @@ void compositeImages(JNIEnv *e, jobject clazzObject, jobject subImage, jint myRa
             std::cout << "Distance of proc " << k << ": " << distances[k] << std::endl;
         }
     }
+#endif
 
     std::sort(procs.begin(), procs.end(), [&](int i, int j){return distances[i] < distances[j];});
 
+#if VERBOSE
     if(myRank == 0) {
         std::cout << "Order is: " << std::endl;
     }
@@ -440,6 +443,7 @@ void compositeImages(JNIEnv *e, jobject clazzObject, jobject subImage, jint myRa
             std::cout << "At pos: " << i << " proc: " << order[i] << std::endl;
         }
     }
+#endif
 
     icetCompositeOrder(order);
 
@@ -471,7 +475,7 @@ void compositeImages(JNIEnv *e, jobject clazzObject, jobject subImage, jint myRa
 
         std::string basePath = "/home/aryaman/TestingData/";
 
-        if ((count % 10) == 0) {
+        if (!benchmarking && (count % 10) == 0) {
 
             std::cout << "Writing the composited image " << count << " now" << std::endl;
 
