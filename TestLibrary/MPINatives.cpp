@@ -441,6 +441,8 @@ void compositeImages(JNIEnv *e, jobject clazzObject, jobject subImage, jint myRa
 
     icetCompositeOrder(order);
 
+    auto begin_comp = std::chrono::high_resolution_clock::now();
+
     image = icetCompositeImage(
             imageBuffer,
             NULL,
@@ -450,8 +452,15 @@ void compositeImages(JNIEnv *e, jobject clazzObject, jobject subImage, jint myRa
             background_color
             );
 
+    auto end_comp = std::chrono::high_resolution_clock::now();
+
+    auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end_comp - begin_comp);
 
     if(myRank == 0) {
+        auto compTime = (elapsed.count()) * 1e-9;
+
+        std :: cout << "Compositing time: " << compTime <<std::endl;
+
         const char *color_buffer = (char *)icetImageGetColorcui(image);
 
         IceTSizeType width;
