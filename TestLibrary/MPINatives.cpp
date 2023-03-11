@@ -461,7 +461,7 @@ void compositeImages(JNIEnv *e, jobject clazzObject, jobject subImage, jint myRa
         auto compTime = (elapsed.count()) * 1e-9;
         auto frameTime = (elapsed_frame.count()) * 1e-9;
 
-        std :: cout << "Frame time: " << frameTime << " of which compositing time: " << compTime <<std::endl;
+        std :: cout << "Frame time: " << frameTime << " of which compositing time: " << compTime << " so dvr time should be: " << (frameTime-compTime) << std::endl;
 
         const char *color_buffer = (char *)icetImageGetColorcui(image);
 
