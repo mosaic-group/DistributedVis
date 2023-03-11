@@ -452,17 +452,19 @@ void compositeImages(JNIEnv *e, jobject clazzObject, jobject subImage, jint myRa
             background_color
             );
 
+#if PROFILING
     auto end_comp = std::chrono::high_resolution_clock::now();
 
     auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end_comp - begin_comp);
     auto elapsed_frame = std::chrono::duration_cast<std::chrono::nanoseconds>(end_comp - begin);
-
+#endif
     if(myRank == 0) {
+#if PROFILING
         auto compTime = (elapsed.count()) * 1e-9;
         auto frameTime = (elapsed_frame.count()) * 1e-9;
 
         std :: cout << "Frame time: " << frameTime << " of which compositing time: " << compTime << " so dvr time should be: " << (frameTime-compTime) << std::endl;
-
+#endif
         const char *color_buffer = (char *)icetImageGetColorcui(image);
 
         IceTSizeType width;
@@ -499,22 +501,24 @@ void compositeImages(JNIEnv *e, jobject clazzObject, jobject subImage, jint myRa
         }
         count++;
 
-        jclass clazz = e->GetObjectClass(clazzObject);
-        jmethodID displayMethod = e->GetMethodID(clazz, "displayComposited", "(Ljava/nio/ByteBuffer;)V");
-
-        jobject bbCcomposited = e->NewDirectByteBuffer((void *)color_buffer, windowHeight * windowWidth * 4);
-        if(e->ExceptionOccurred()) {
-            e->ExceptionDescribe();
-            e->ExceptionClear();
-        }
-
-        e->CallVoidMethod(clazzObject, displayMethod, bbCcomposited);
-        if(e->ExceptionOccurred()) {
-            e->ExceptionDescribe();
-            e->ExceptionClear();
-        }
+//        jclass clazz = e->GetObjectClass(clazzObject);
+//        jmethodID displayMethod = e->GetMethodID(clazz, "displayComposited", "(Ljava/nio/ByteBuffer;)V");
+//
+//        jobject bbCcomposited = e->NewDirectByteBuffer((void *)color_buffer, windowHeight * windowWidth * 4);
+//        if(e->ExceptionOccurred()) {
+//            e->ExceptionDescribe();
+//            e->ExceptionClear();
+//        }
+//
+//        e->CallVoidMethod(clazzObject, displayMethod, bbCcomposited);
+//        if(e->ExceptionOccurred()) {
+//            e->ExceptionDescribe();
+//            e->ExceptionClear();
+//        }
     }
+#if PROFILING
     begin = std::chrono::high_resolution_clock::now();
+#endif
 }
 
 void distributeDenseVDIs(JNIEnv *e, jobject clazzObject, jobject colorVDI, jobject depthVDI, jobject prefixSums, jintArray supersegmentCounts, jint commSize, jlong colPointer, jlong depthPointer, jlong prefixPointer, jlong mpiPointer) {
