@@ -455,11 +455,13 @@ void compositeImages(JNIEnv *e, jobject clazzObject, jobject subImage, jint myRa
     auto end_comp = std::chrono::high_resolution_clock::now();
 
     auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end_comp - begin_comp);
+    auto elapsed_frame = std::chrono::duration_cast<std::chrono::nanoseconds>(end_comp - begin);
 
     if(myRank == 0) {
         auto compTime = (elapsed.count()) * 1e-9;
+        auto frameTime = (elapsed.count()) * 1e-9;
 
-        std :: cout << "Compositing time: " << compTime <<std::endl;
+        std :: cout << "Frame time: " << frameTime << " of which compositing time: " << compTime <<std::endl;
 
         const char *color_buffer = (char *)icetImageGetColorcui(image);
 
@@ -512,6 +514,7 @@ void compositeImages(JNIEnv *e, jobject clazzObject, jobject subImage, jint myRa
             e->ExceptionClear();
         }
     }
+    begin = std::chrono::high_resolution_clock::now();
 }
 
 void distributeDenseVDIs(JNIEnv *e, jobject clazzObject, jobject colorVDI, jobject depthVDI, jobject prefixSums, jintArray supersegmentCounts, jint commSize, jlong colPointer, jlong depthPointer, jlong prefixPointer, jlong mpiPointer) {
