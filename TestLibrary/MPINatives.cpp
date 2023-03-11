@@ -459,7 +459,7 @@ void compositeImages(JNIEnv *e, jobject clazzObject, jobject subImage, jint myRa
 
     if(myRank == 0) {
         auto compTime = (elapsed.count()) * 1e-9;
-        auto frameTime = (elapsed.count()) * 1e-9;
+        auto frameTime = (elapsed_frame.count()) * 1e-9;
 
         std :: cout << "Frame time: " << frameTime << " of which compositing time: " << compTime <<std::endl;
 
