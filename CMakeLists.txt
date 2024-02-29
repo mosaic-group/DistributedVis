@@ -26,11 +26,11 @@ endif()
 
 set(CMAKE_CXX_STANDARD 14)
 
-add_subdirectory(TestLibrary)
+add_subdirectory(libLiV)
 
-add_executable(DistributedVis main.cpp TestLibrary/test.cpp TestLibrary/MPINatives.cpp TestLibrary/ManageRendering.cpp)
+add_executable(DistributedVis main.cpp libLiV/setupScene.cpp libLiV/MPINatives.cpp libLiV/ManageRendering.cpp)
 
-add_executable(CompositingTest VDICompositingTest.cpp TestLibrary/MPINatives.cpp TestLibrary/ManageRendering.cpp)
+add_executable(CompositingTest VDICompositingTest.cpp libLiV/MPINatives.cpp libLiV/ManageRendering.cpp)
 
 target_include_directories(DistributedVis PUBLIC
         "${CMAKE_SOURCE_DIR}/TestLibrary"
@@ -52,7 +52,7 @@ target_include_directories(CompositingTest PUBLIC ${JNI_INCLUDE_DIRS})
 
 target_link_libraries(DistributedVis PUBLIC ${JNI_LIBRARIES})
 target_link_libraries(DistributedVis PUBLIC pthread)
-target_link_directories(DistributedVis PUBLIC TestLibrary)
+target_link_directories(DistributedVis PUBLIC libLiV)
 target_link_directories(DistributedVis PUBLIC MPILibrary)
 target_link_libraries(DistributedVis PUBLIC ${MPI_CXX_LIBRARIES})
 target_link_libraries(DistributedVis PUBLIC ${ICET_CORE_LIBS} ${ICET_GL_LIBS} ${ICET_MPI_LIBS})

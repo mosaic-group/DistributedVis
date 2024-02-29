@@ -27,7 +27,7 @@ else()
     message("jni not found!! JAVA_HOME: ${JAVA_HOME}")
 endif()
 
-add_library(TestLibrary test.cpp)
+add_library(TestLibrary setupScene.cpp)
 add_library(MPILibrary MPINatives.cpp)
 add_library(RenderingLibrary ManageRendering.cpp)
 
@@ -38,7 +38,7 @@ target_include_directories(RenderingLibrary PUBLIC ${JNI_INCLUDE_DIRS})
 message("changed icet dirs")
 target_include_directories(RenderingLibrary PUBLIC ${ICET_INCLUDE_DIRS})
 
-#target_include_directories (TestLibrary PUBLIC ${JNI_INCLUDE_DIRS})
+#target_include_directories (libLiV PUBLIC ${JNI_INCLUDE_DIRS})
 
 target_include_directories(TestLibrary PUBLIC
         ${MPI_C_INCLUDE_PATH}

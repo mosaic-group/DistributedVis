@@ -12,6 +12,6 @@ const int numOutputSupsegs = 20;
 const int colorSize = windowWidth * windowHeight * numSupersegments * 4 * 4;
 const int depthSize = windowWidth * windowHeight * numSupersegments * 4 * 2;
 
-const bool benchmarking = false;
+const bool benchmarking = true;
 
 #endif //DISTRIBUTEDVIS_VDIPARAMS_HPP

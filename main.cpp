@@ -1,8 +1,8 @@
 #include <iostream>
-#include "TestLiibrary.hpp"
-#include "MPINatives.hpp"
-#include "ManageRendering.hpp"
-#include "VDIParams.hpp"
+#include "libLiV/libLiV.hpp"
+#include "libLiV/MPINatives.hpp"
+#include "libLiV/ManageRendering.hpp"
+#include "libLiV/VDIParams.hpp"
 #include <mpi.h>
 #include <thread>
 #include <fstream>

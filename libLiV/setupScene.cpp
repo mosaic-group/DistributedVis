@@ -1,6 +1,6 @@
 #include <iostream>
 #include <dirent.h>
-#include "TestLiibrary.hpp"
+#include "libLiV.hpp"
 #include <mpi.h>
 #include <string.h>
 #include "VDIParams.hpp"
